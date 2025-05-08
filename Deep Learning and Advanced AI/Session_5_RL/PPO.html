@@ -1,0 +1,1374 @@
+<!-- PPO Simulation By Pejman Ebrahimi -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PPO Reinforcement Learning Simulation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f8f9fa;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2,
+      h3 {
+        color: #2c3e50;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 2px;
+        margin: 20px 0;
+      }
+      .cell {
+        width: 100%;
+        aspect-ratio: 1;
+        background-color: #ecf0f1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s;
+      }
+      .agent {
+        background-color: #3498db;
+        border-radius: 50%;
+        width: 80%;
+        height: 80%;
+        position: absolute;
+      }
+      .goal {
+        background-color: #2ecc71;
+        width: 80%;
+        height: 80%;
+        position: absolute;
+      }
+      .obstacle {
+        background-color: #e74c3c;
+        width: 80%;
+        height: 80%;
+        position: absolute;
+      }
+      .panel {
+        background-color: #f5f7f9;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      button {
+        padding: 8px 15px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+      button:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+      }
+      .sliders {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 15px 0;
+      }
+      .slider-container {
+        display: flex;
+        align-items: center;
+      }
+      .slider-container label {
+        flex: 1;
+        min-width: 180px;
+      }
+      .slider-container input {
+        flex: 2;
+      }
+      .slider-value {
+        flex: 0 0 50px;
+        text-align: right;
+      }
+      #log-container {
+        max-height: 200px;
+        overflow-y: auto;
+        background-color: #2c3e50;
+        color: #ecf0f1;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 20px;
+        font-family: monospace;
+      }
+      .log-entry {
+        margin: 5px 0;
+      }
+      .tab-container {
+        margin-top: 20px;
+      }
+      .tab-buttons {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+      }
+      .tab-button {
+        padding: 10px 20px;
+        background-color: #f1f1f1;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      .tab-button.active {
+        background-color: #3498db;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-top: none;
+        animation: fadeIn 0.5s;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      #policy-display {
+        width: 100%;
+        height: 300px;
+        overflow: auto;
+        margin-top: 10px;
+      }
+      .policy-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 2px;
+      }
+      .policy-cell {
+        aspect-ratio: 1;
+        border: 1px solid #ddd;
+        padding: 2px;
+        font-size: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .arrow {
+        width: 0;
+        height: 0;
+        border-style: solid;
+        margin: 2px;
+      }
+      .arrow-up {
+        border-width: 0 4px 8px 4px;
+        border-color: transparent transparent #3498db transparent;
+      }
+      .arrow-right {
+        border-width: 4px 0 4px 8px;
+        border-color: transparent transparent transparent #3498db;
+      }
+      .arrow-down {
+        border-width: 8px 4px 0 4px;
+        border-color: #3498db transparent transparent transparent;
+      }
+      .arrow-left {
+        border-width: 4px 8px 4px 0;
+        border-color: transparent #3498db transparent transparent;
+      }
+      .progress-container {
+        margin-top: 10px;
+        background-color: #f1f1f1;
+        border-radius: 5px;
+        height: 20px;
+        position: relative;
+      }
+      .progress-bar {
+        height: 100%;
+        background-color: #3498db;
+        border-radius: 5px;
+        width: 0%;
+        transition: width 0.3s;
+      }
+      .chart-container {
+        height: 300px;
+        margin: 15px 0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        max-width: 80%;
+        max-height: 80%;
+        overflow-y: auto;
+      }
+      .popup-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+      }
+      .reward-display {
+        font-weight: bold;
+        font-size: 1.2em;
+        text-align: center;
+        margin: 10px 0;
+      }
+      .explanation {
+        background-color: #e8f4fc;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border-left: 4px solid #3498db;
+      }
+      .highlight {
+        background-color: #fffacd;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      .concept-box {
+        border: 1px solid #ddd;
+        margin: 15px 0;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .concept-title {
+        background-color: #3498db;
+        color: white;
+        padding: 10px;
+        margin: 0;
+      }
+      .concept-content {
+        padding: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Proximal Policy Optimization (PPO) Simulation</h1>
+
+      <div class="explanation">
+        <p>
+          This simulation demonstrates how an agent learns to navigate to a goal
+          using <strong>Proximal Policy Optimization (PPO)</strong>. PPO is an
+          on-policy reinforcement learning algorithm that uses a "clipping"
+          mechanism to prevent large policy updates, making training more stable
+          and efficient.
+        </p>
+      </div>
+
+      <div class="tab-container">
+        <div class="tab-buttons">
+          <button class="tab-button active" onclick="openTab('simulation-tab')">
+            Simulation
+          </button>
+          <button class="tab-button" onclick="openTab('concepts-tab')">
+            PPO Concepts
+          </button>
+          <button class="tab-button" onclick="openTab('metrics-tab')">
+            Training Metrics
+          </button>
+        </div>
+
+        <div id="simulation-tab" class="tab-content active">
+          <div class="panel">
+            <h3>Environment</h3>
+            <p>
+              The agent (blue) must navigate to the goal (green) while avoiding
+              obstacles (red).
+            </p>
+            <div class="grid-container" id="grid"></div>
+            <div class="reward-display">
+              Total Reward: <span id="reward-value">0</span>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="start-btn" onclick="startTraining()">
+              Start Training
+            </button>
+            <button id="reset-btn" onclick="resetEnvironment()">
+              Reset Environment
+            </button>
+            <button id="step-btn" onclick="stepTraining()" disabled>
+              Step Forward
+            </button>
+            <button id="place-obstacle-btn" onclick="toggleObstaclePlacement()">
+              Place Obstacles
+            </button>
+            <button id="animation-speed-btn" onclick="toggleAnimationSpeed()">
+              Animation Speed: Normal
+            </button>
+          </div>
+
+          <div class="panel">
+            <h3>PPO Parameters</h3>
+            <div class="sliders">
+              <div class="slider-container">
+                <label for="clip-ratio">Clip Ratio (ε):</label>
+                <input
+                  type="range"
+                  id="clip-ratio"
+                  min="0.05"
+                  max="0.5"
+                  step="0.05"
+                  value="0.2"
+                  oninput="updateSliderValue('clip-ratio')"
+                />
+                <span class="slider-value" id="clip-ratio-value">0.2</span>
+              </div>
+              <div class="slider-container">
+                <label for="learning-rate">Learning Rate:</label>
+                <input
+                  type="range"
+                  id="learning-rate"
+                  min="0.01"
+                  max="1"
+                  step="0.01"
+                  value="0.1"
+                  oninput="updateSliderValue('learning-rate')"
+                />
+                <span class="slider-value" id="learning-rate-value">0.1</span>
+              </div>
+              <div class="slider-container">
+                <label for="epochs">PPO Epochs per Update:</label>
+                <input
+                  type="range"
+                  id="epochs"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value="4"
+                  oninput="updateSliderValue('epochs')"
+                />
+                <span class="slider-value" id="epochs-value">4</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Policy Visualization</h3>
+            <p>
+              This shows the current policy of the agent (arrows indicate
+              preferred actions in each state).
+            </p>
+            <div id="policy-display">
+              <div class="policy-grid" id="policy-grid"></div>
+            </div>
+          </div>
+
+          <div id="log-container"></div>
+        </div>
+
+        <div id="concepts-tab" class="tab-content">
+          <div class="concept-box">
+            <h3 class="concept-title">What is PPO?</h3>
+            <div class="concept-content">
+              <p>
+                Proximal Policy Optimization (PPO) is a policy gradient method
+                for reinforcement learning developed by OpenAI in 2017. It has
+                become one of the most popular RL algorithms due to its
+                simplicity and effectiveness.
+              </p>
+              <p>PPO aims to balance two objectives:</p>
+              <ul>
+                <li>Improving the agent's policy to maximize rewards</li>
+                <li>
+                  Preventing large policy updates that could destabilize
+                  training
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="concept-box">
+            <h3 class="concept-title">Key Innovations in PPO</h3>
+            <div class="concept-content">
+              <p>
+                The central innovation in PPO is the
+                <strong>clipped surrogate objective function</strong>:
+              </p>
+              <p style="text-align: center">
+                L<sup>CLIP</sup>(θ) = E[min(r<sub>t</sub>(θ)A<sub>t</sub>,
+                clip(r<sub>t</sub>(θ), 1-ε, 1+ε)A<sub>t</sub>)]
+              </p>
+              <p>where:</p>
+              <ul>
+                <li>
+                  <strong>r<sub>t</sub>(θ)</strong> is the ratio of
+                  probabilities under new and old policies
+                </li>
+                <li>
+                  <strong>A<sub>t</sub></strong> is the advantage estimate
+                </li>
+                <li>
+                  <strong>ε</strong> is the clipping parameter (usually 0.1 or
+                  0.2)
+                </li>
+              </ul>
+              <p>
+                The clipping mechanism ensures that the policy update stays
+                within a "trust region" by limiting how much the new policy can
+                deviate from the old one.
+              </p>
+            </div>
+          </div>
+
+          <div class="concept-box">
+            <h3 class="concept-title">How PPO Works in This Simulation</h3>
+            <div class="concept-content">
+              <ol>
+                <li>
+                  The agent collects experience by interacting with the
+                  environment using its current policy
+                </li>
+                <li>Advantages are computed for each state-action pair</li>
+                <li>
+                  The policy is updated using the clipped surrogate objective
+                </li>
+                <li>
+                  Multiple optimization epochs are performed on the same batch
+                  of data
+                </li>
+                <li>The process repeats with the new policy</li>
+              </ol>
+              <p>
+                You can observe these steps in action in the simulation tab by
+                watching the policy visualization and training metrics.
+              </p>
+            </div>
+          </div>
+
+          <div class="concept-box">
+            <h3 class="concept-title">PPO vs. Other RL Algorithms</h3>
+            <div class="concept-content">
+              <p>PPO improves upon earlier algorithms in several ways:</p>
+              <ul>
+                <li>
+                  <strong>vs. REINFORCE:</strong> More stable training due to
+                  advantage estimation and clipping
+                </li>
+                <li>
+                  <strong>vs. TRPO:</strong> Simpler implementation while
+                  maintaining similar performance
+                </li>
+                <li>
+                  <strong>vs. A2C/A3C:</strong> Better sample efficiency and
+                  more stable policy updates
+                </li>
+                <li>
+                  <strong>vs. Off-policy algorithms (DQN, DDPG):</strong> Less
+                  sensitive to hyperparameters and often more stable
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div id="metrics-tab" class="tab-content">
+          <div class="panel">
+            <h3>Training Progress</h3>
+            <div class="progress-container">
+              <div class="progress-bar" id="training-progress"></div>
+            </div>
+            <p id="episode-counter">Episodes: 0 / 100</p>
+          </div>
+
+          <div class="panel">
+            <h3>Reward Over Time</h3>
+            <div class="chart-container" id="reward-chart"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Policy Loss</h3>
+            <div class="chart-container" id="policy-loss-chart"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Value Loss</h3>
+            <div class="chart-container" id="value-loss-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="popup-overlay" id="popup-overlay"></div>
+    <div class="popup" id="popup">
+      <h2 id="popup-title">Title</h2>
+      <div id="popup-content">Content</div>
+      <button onclick="closePopup()">Close</button>
+    </div>
+
+    <script>
+      // Environment configuration
+      const GRID_SIZE = 10;
+      let grid = [];
+      let agentPos = { x: 0, y: 0 };
+      let goalPos = { x: 9, y: 9 };
+      let obstacles = [];
+      let placingObstacles = false;
+
+      // Agent and PPO parameters
+      let policyNetwork = {};
+      let valueNetwork = {};
+      let clipRatio = 0.2;
+      let learningRate = 0.1; // Default learning rate (0-1 range)
+      let ppoEpochs = 4;
+      let gamma = 0.99; // Discount factor
+      let lambda = 0.95; // GAE parameter
+
+      // Training state
+      let isTraining = false;
+      let episode = 0;
+      let maxEpisodes = 100;
+      let episodeSteps = 0;
+      let maxStepsPerEpisode = 100; // Increased max steps to allow more exploration
+      let totalReward = 0;
+      let episodeRewards = [];
+      let policyLosses = [];
+      let valueLosses = [];
+
+      // Tracking for visualization
+      let trajectories = [];
+      let oldPolicy = {};
+
+      // Exploration parameters
+      let explorationRate = 0.2; // Probability of taking a random action (exploration)
+
+      // Initialize the environment
+      function initializeEnvironment() {
+        grid = [];
+        obstacles = [];
+
+        // Create the grid UI
+        const gridContainer = document.getElementById("grid");
+        gridContainer.innerHTML = "";
+
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.dataset.x = x;
+            cell.dataset.y = y;
+            cell.addEventListener("click", handleCellClick);
+            gridContainer.appendChild(cell);
+          }
+        }
+
+        // Place agent and goal
+        agentPos = { x: 0, y: 0 };
+        goalPos = { x: 9, y: 9 };
+        renderGrid();
+
+        // Initialize policy and value networks
+        initializeNetworks();
+        renderPolicy();
+        updateReward(0);
+      }
+
+      // Initialize policy and value networks
+      function initializeNetworks() {
+        policyNetwork = {};
+        valueNetwork = {};
+
+        // Initialize learning rate
+        learningRate = parseFloat(
+          document.getElementById("learning-rate").value
+        );
+
+        // Initialize policy and value for each state (cell)
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const stateKey = `${x},${y}`;
+
+            // Initialize policy with random probabilities
+            policyNetwork[stateKey] = {
+              up: 0.25,
+              right: 0.25,
+              down: 0.25,
+              left: 0.25,
+            };
+
+            // Initialize value to zero
+            valueNetwork[stateKey] = 0;
+          }
+        }
+      }
+
+      function renderGrid() {
+        // Clear all cells
+        const cells = document.querySelectorAll(".cell");
+        cells.forEach((cell) => {
+          cell.innerHTML = "";
+        });
+
+        // Place agent
+        const agentCell = document.querySelector(
+          `.cell[data-x="${agentPos.x}"][data-y="${agentPos.y}"]`
+        );
+        const agentElement = document.createElement("div");
+        agentElement.classList.add("agent");
+        agentCell.appendChild(agentElement);
+
+        // Place goal
+        const goalCell = document.querySelector(
+          `.cell[data-x="${goalPos.x}"][data-y="${goalPos.y}"]`
+        );
+        const goalElement = document.createElement("div");
+        goalElement.classList.add("goal");
+        goalCell.appendChild(goalElement);
+
+        // Place obstacles
+        obstacles.forEach((obstacle) => {
+          const obstacleCell = document.querySelector(
+            `.cell[data-x="${obstacle.x}"][data-y="${obstacle.y}"]`
+          );
+          const obstacleElement = document.createElement("div");
+          obstacleElement.classList.add("obstacle");
+          obstacleCell.appendChild(obstacleElement);
+        });
+      }
+
+      function renderPolicy() {
+        const policyGrid = document.getElementById("policy-grid");
+        policyGrid.innerHTML = "";
+
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = document.createElement("div");
+            cell.classList.add("policy-cell");
+
+            const stateKey = `${x},${y}`;
+            const policy = policyNetwork[stateKey];
+
+            // Skip rendering policy for obstacles
+            if (isObstacle(x, y)) {
+              cell.style.backgroundColor = "#e74c3c";
+              policyGrid.appendChild(cell);
+              continue;
+            }
+
+            // If it's the goal, mark it green
+            if (x === goalPos.x && y === goalPos.y) {
+              cell.style.backgroundColor = "#2ecc71";
+              policyGrid.appendChild(cell);
+              continue;
+            }
+
+            // Create arrows for each action probability
+            for (const [action, prob] of Object.entries(policy)) {
+              if (prob > 0.2) {
+                // Only show significant probabilities
+                const arrow = document.createElement("div");
+                arrow.classList.add("arrow", `arrow-${action}`);
+                arrow.style.opacity = Math.min(1, prob * 2); // Scale opacity with probability
+                cell.appendChild(arrow);
+              }
+            }
+
+            // Add state value indication using background color intensity
+            const value = valueNetwork[stateKey];
+            const normalizedValue = (value + 10) / 20; // Normalize to [0,1] range assuming values between -10 and 10
+            const intensity = Math.max(
+              0,
+              Math.min(255, Math.floor(normalizedValue * 255))
+            );
+            cell.style.backgroundColor = `rgba(236, 240, 241, ${normalizedValue})`;
+
+            policyGrid.appendChild(cell);
+          }
+        }
+      }
+
+      function handleCellClick(event) {
+        const x = parseInt(event.currentTarget.dataset.x);
+        const y = parseInt(event.currentTarget.dataset.y);
+
+        if (placingObstacles) {
+          // Don't allow obstacles on agent or goal
+          if (
+            (x === agentPos.x && y === agentPos.y) ||
+            (x === goalPos.x && y === goalPos.y)
+          ) {
+            return;
+          }
+
+          const obstacleIndex = obstacles.findIndex(
+            (o) => o.x === x && o.y === y
+          );
+          if (obstacleIndex === -1) {
+            obstacles.push({ x, y });
+          } else {
+            obstacles.splice(obstacleIndex, 1);
+          }
+          renderGrid();
+          renderPolicy();
+        }
+      }
+
+      function toggleObstaclePlacement() {
+        placingObstacles = !placingObstacles;
+        const btn = document.getElementById("place-obstacle-btn");
+        btn.textContent = placingObstacles ? "Done Placing" : "Place Obstacles";
+        btn.style.backgroundColor = placingObstacles ? "#e74c3c" : "#3498db";
+      }
+
+      function isObstacle(x, y) {
+        return obstacles.some((o) => o.x === x && o.y === y);
+      }
+
+      function resetEnvironment() {
+        initializeEnvironment();
+        episodeRewards = [];
+        policyLosses = [];
+        valueLosses = [];
+        episode = 0;
+        updateEpisodeCounter();
+        updateReward(0);
+
+        // Reset training state
+        isTraining = false;
+        document.getElementById("start-btn").textContent = "Start Training";
+        document.getElementById("step-btn").disabled = true;
+
+        // Clear charts
+        // In a real implementation, you would update the charts here
+
+        logMessage("Environment reset. Ready for training!");
+      }
+
+      function startTraining() {
+        if (isTraining) {
+          // Stop training
+          isTraining = false;
+          document.getElementById("start-btn").textContent = "Start Training";
+          document.getElementById("step-btn").disabled = true;
+        } else {
+          // Start training
+          isTraining = true;
+          document.getElementById("start-btn").textContent = "Stop Training";
+          document.getElementById("step-btn").disabled = false;
+
+          // If we're at the end of training, reset first
+          if (episode >= maxEpisodes) {
+            resetEnvironment();
+          }
+
+          runTrainingLoop();
+        }
+      }
+
+      function stepTraining() {
+        if (episode < maxEpisodes) {
+          runEpisode();
+          updateTrainingProgress();
+        } else {
+          logMessage("Training complete! Reset to train again.");
+        }
+      }
+
+      async function runTrainingLoop() {
+        while (isTraining && episode < maxEpisodes) {
+          await runEpisode();
+          updateTrainingProgress();
+
+          // Add a small delay to visualize the process
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+
+        if (episode >= maxEpisodes) {
+          logMessage("Training complete!");
+          isTraining = false;
+          document.getElementById("start-btn").textContent = "Start Training";
+        }
+      }
+
+      async function runEpisode() {
+        // Reset agent position and episodic variables
+        agentPos = { x: 0, y: 0 };
+        episodeSteps = 0;
+        totalReward = 0;
+        trajectories = [];
+
+        // Decay exploration rate over time (important for improving policy)
+        explorationRate = Math.max(0.05, 0.2 * Math.pow(0.99, episode));
+
+        renderGrid();
+        updateReward(totalReward);
+
+        // Save old policy for PPO ratio calculation
+        oldPolicy = JSON.parse(JSON.stringify(policyNetwork));
+
+        // Run episode until termination
+        let done = false;
+        while (!done && episodeSteps < maxStepsPerEpisode) {
+          done = await executeStep();
+          episodeSteps++;
+
+          // Small delay for visualization
+          await new Promise((resolve) =>
+            setTimeout(resolve, animationSpeeds[animationSpeed] / 2)
+          );
+        }
+
+        // Add episode reward to history
+        episodeRewards.push(totalReward);
+
+        // Run PPO update if we have enough steps
+        if (trajectories.length > 0) {
+          const [policyLoss, valueLoss] = updatePPO();
+          policyLosses.push(policyLoss);
+          valueLosses.push(valueLoss);
+        }
+
+        // Update UI
+        renderPolicy();
+        episode++;
+        updateEpisodeCounter();
+
+        logMessage(
+          `Episode ${episode}: Reward=${totalReward.toFixed(
+            2
+          )}, Steps=${episodeSteps}, Exploration=${explorationRate.toFixed(2)}`
+        );
+
+        return new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      async function executeStep() {
+        const stateKey = `${agentPos.x},${agentPos.y}`;
+        const policy = policyNetwork[stateKey];
+
+        // Choose action based on policy
+        const action = sampleAction(policy);
+
+        // Store old position
+        const oldPos = { ...agentPos };
+
+        // Move agent
+        moveAgent(action);
+
+        // Calculate reward
+        const reward = calculateReward(oldPos);
+        totalReward += reward;
+        updateReward(totalReward);
+
+        // Check if episode is done
+        const done =
+          (agentPos.x === goalPos.x && agentPos.y === goalPos.y) ||
+          isObstacle(agentPos.x, agentPos.y);
+
+        // If agent hit obstacle, move it back for visualization
+        if (isObstacle(agentPos.x, agentPos.y)) {
+          agentPos = { ...oldPos };
+        }
+
+        // Render the grid
+        renderGrid();
+
+        // Store trajectory
+        const newStateKey = `${agentPos.x},${agentPos.y}`;
+        trajectories.push({
+          state: stateKey,
+          action,
+          reward,
+          nextState: newStateKey,
+          done,
+        });
+
+        return done;
+      }
+
+      function sampleAction(policy) {
+        // Use exploration rate to decide whether to take random action or follow policy
+        if (Math.random() < explorationRate) {
+          // Take random action with exploration probability
+          const actions = Object.keys(policy);
+          const randomIndex = Math.floor(Math.random() * actions.length);
+          return actions[randomIndex];
+        }
+
+        // Otherwise sample from policy distribution
+        const actions = Object.keys(policy);
+        const probs = actions.map((a) => policy[a]);
+
+        const rand = Math.random();
+        let cumProb = 0;
+
+        for (let i = 0; i < actions.length; i++) {
+          cumProb += probs[i];
+          if (rand < cumProb) {
+            return actions[i];
+          }
+        }
+
+        return actions[actions.length - 1];
+      }
+
+      function moveAgent(action) {
+        // Save previous position
+        const prevPos = { ...agentPos };
+
+        // Attempt to move agent
+        switch (action) {
+          case "up":
+            agentPos.y = Math.max(0, agentPos.y - 1);
+            break;
+          case "right":
+            agentPos.x = Math.min(GRID_SIZE - 1, agentPos.x + 1);
+            break;
+          case "down":
+            agentPos.y = Math.min(GRID_SIZE - 1, agentPos.y + 1);
+            break;
+          case "left":
+            agentPos.x = Math.max(0, agentPos.x - 1);
+            break;
+        }
+
+        // Check if new position is an obstacle
+        if (isObstacle(agentPos.x, agentPos.y)) {
+          // Revert to previous position if it hit an obstacle
+          agentPos.x = prevPos.x;
+          agentPos.y = prevPos.y;
+          return false; // Indicate movement was blocked
+        }
+
+        return true; // Movement successful
+      }
+
+      function calculateReward(oldPos, movementSuccessful) {
+        // Reward for reaching goal
+        if (agentPos.x === goalPos.x && agentPos.y === goalPos.y) {
+          return 10;
+        }
+
+        // Penalty for attempting to move into an obstacle (but not actually moving into it)
+        if (!movementSuccessful) {
+          return -1; // Reduced penalty to avoid too much negative learning
+        }
+
+        // Small penalty for each step to encourage efficiency
+        let stepPenalty = -0.1;
+
+        // Small reward for getting closer to goal (using Manhattan distance)
+        const oldDistance =
+          Math.abs(oldPos.x - goalPos.x) + Math.abs(oldPos.y - goalPos.y);
+        const newDistance =
+          Math.abs(agentPos.x - goalPos.x) + Math.abs(agentPos.y - goalPos.y);
+        const proximityReward = oldDistance > newDistance ? 0.3 : -0.1; // Stronger reward for progress
+
+        return stepPenalty + proximityReward;
+      }
+
+      function updatePPO() {
+        // Get parameters from sliders
+        clipRatio = parseFloat(document.getElementById("clip-ratio").value);
+        learningRate = parseFloat(
+          document.getElementById("learning-rate").value
+        );
+        ppoEpochs = parseInt(document.getElementById("epochs").value);
+
+        // Compute returns and advantages
+        const returns = [];
+        const advantages = [];
+
+        // Compute returns (discounted sum of future rewards)
+        let discountedReturn = 0;
+        for (let i = trajectories.length - 1; i >= 0; i--) {
+          const transition = trajectories[i];
+          discountedReturn =
+            transition.reward +
+            gamma * (transition.done ? 0 : discountedReturn);
+          returns.unshift(discountedReturn);
+        }
+
+        // Compute advantages using Generalized Advantage Estimation (GAE)
+        let lastGaeAdvantage = 0;
+        for (let i = trajectories.length - 1; i >= 0; i--) {
+          const transition = trajectories[i];
+          const stateKey = transition.state;
+          const nextStateKey = transition.nextState;
+
+          const currentValue = valueNetwork[stateKey];
+          const nextValue = transition.done ? 0 : valueNetwork[nextStateKey];
+
+          // TD error
+          const delta = transition.reward + gamma * nextValue - currentValue;
+
+          // GAE
+          lastGaeAdvantage = delta + gamma * lambda * lastGaeAdvantage;
+          advantages.unshift(lastGaeAdvantage);
+        }
+
+        // Normalize advantages for more stable learning
+        const meanAdvantage =
+          advantages.reduce((a, b) => a + b, 0) / advantages.length;
+        const stdAdvantage =
+          Math.sqrt(
+            advantages.reduce((a, b) => a + Math.pow(b - meanAdvantage, 2), 0) /
+              advantages.length
+          ) || 1; // Avoid division by zero
+
+        for (let i = 0; i < advantages.length; i++) {
+          advantages[i] =
+            (advantages[i] - meanAdvantage) / (stdAdvantage + 1e-8);
+        }
+
+        // Store losses for metrics
+        let totalPolicyLoss = 0;
+        let totalValueLoss = 0;
+
+        // Backup old policy for PPO ratio calculation
+        const oldPolicyBackup = JSON.parse(JSON.stringify(policyNetwork));
+
+        // Multiple epochs of optimization on the same data (key PPO feature)
+        for (let epoch = 0; epoch < ppoEpochs; epoch++) {
+          // Update policy and value networks for each step in the trajectory
+          for (let i = 0; i < trajectories.length; i++) {
+            const transition = trajectories[i];
+            const stateKey = transition.state;
+            const action = transition.action;
+
+            // Get old action probability
+            const oldActionProb = oldPolicy[stateKey][action];
+
+            // Get current action probability
+            const currentActionProb = policyNetwork[stateKey][action];
+
+            // Compute probability ratio (crucial for PPO)
+            const ratio = currentActionProb / Math.max(oldActionProb, 1e-8);
+
+            // Get advantage for this action
+            const advantage = advantages[i];
+
+            // Compute unclipped and clipped surrogate objectives
+            const unclippedObjective = ratio * advantage;
+            const clippedRatio = Math.max(
+              Math.min(ratio, 1 + clipRatio),
+              1 - clipRatio
+            );
+            const clippedObjective = clippedRatio * advantage;
+
+            // PPO's clipped surrogate objective (core of PPO)
+            const surrogateObjective = Math.min(
+              unclippedObjective,
+              clippedObjective
+            );
+
+            // Compute policy gradient
+            // Note: In PPO, we maximize the objective, so negative for gradient ascent
+            const policyLoss = -surrogateObjective;
+            totalPolicyLoss += policyLoss;
+
+            // Value loss (using returns as targets)
+            const valueTarget = returns[i];
+            const valuePrediction = valueNetwork[stateKey];
+            const valueLoss = 0.5 * Math.pow(valueTarget - valuePrediction, 2);
+            totalValueLoss += valueLoss;
+
+            // Update value network with gradient descent
+            valueNetwork[stateKey] +=
+              learningRate * (valueTarget - valuePrediction);
+
+            // Compute policy update based on whether we're using clipped or unclipped objective
+            const useClippedObjective = unclippedObjective > clippedObjective;
+            const policyGradient =
+              learningRate * advantage * (useClippedObjective ? 0 : 1);
+
+            // Apply policy gradient update
+            // Increase probability of the taken action if it was good (positive advantage)
+            // Decrease probability if it was bad (negative advantage)
+            let newProb = policyNetwork[stateKey][action] + policyGradient;
+
+            // Ensure probability stays positive (important for ratio calculation)
+            newProb = Math.max(newProb, 0.01);
+            policyNetwork[stateKey][action] = newProb;
+
+            // Normalize probabilities to ensure they sum to 1
+            const sumProb = Object.values(policyNetwork[stateKey]).reduce(
+              (a, b) => a + b,
+              0
+            );
+            for (const a in policyNetwork[stateKey]) {
+              policyNetwork[stateKey][a] /= sumProb;
+            }
+
+            // Add some exploration (entropy bonus)
+            // This is crucial for avoiding local optima
+            if (i % 5 === 0) {
+              // Apply periodically to maintain some exploration
+              for (const a in policyNetwork[stateKey]) {
+                // Slightly nudge probabilities toward uniform
+                policyNetwork[stateKey][a] =
+                  0.95 * policyNetwork[stateKey][a] + 0.05 * 0.25;
+              }
+              // Re-normalize
+              const sumProb = Object.values(policyNetwork[stateKey]).reduce(
+                (a, b) => a + b,
+                0
+              );
+              for (const a in policyNetwork[stateKey]) {
+                policyNetwork[stateKey][a] /= sumProb;
+              }
+            }
+          }
+        }
+
+        // Calculate average losses
+        const avgPolicyLoss =
+          totalPolicyLoss / (trajectories.length * ppoEpochs);
+        const avgValueLoss = totalValueLoss / (trajectories.length * ppoEpochs);
+
+        // Log progress periodically
+        if (episode % 5 === 0) {
+          logMessage(
+            `Episode ${episode}: Average Policy Loss = ${avgPolicyLoss.toFixed(
+              4
+            )}, Value Loss = ${avgValueLoss.toFixed(4)}`
+          );
+        }
+
+        return [avgPolicyLoss, avgValueLoss];
+      }
+
+      function updateReward(reward) {
+        document.getElementById("reward-value").textContent = reward.toFixed(2);
+      }
+
+      function updateEpisodeCounter() {
+        document.getElementById(
+          "episode-counter"
+        ).textContent = `Episodes: ${episode} / ${maxEpisodes}`;
+        document.getElementById("training-progress").style.width = `${
+          (episode / maxEpisodes) * 100
+        }%`;
+      }
+
+      function updateTrainingProgress() {
+        // Update charts with the latest data
+        // In a real implementation, you would update charts here
+
+        // Show progress
+        updateEpisodeCounter();
+      }
+
+      function updateSliderValue(id) {
+        const slider = document.getElementById(id);
+        const valueDisplay = document.getElementById(`${id}-value`);
+        valueDisplay.textContent = slider.value;
+
+        // Update corresponding variables
+        if (id === "clip-ratio") clipRatio = parseFloat(slider.value);
+        if (id === "learning-rate") learningRate = parseFloat(slider.value);
+        if (id === "epochs") ppoEpochs = parseInt(slider.value);
+      }
+
+      function logMessage(message) {
+        const logContainer = document.getElementById("log-container");
+        const logEntry = document.createElement("div");
+        logEntry.classList.add("log-entry");
+        logEntry.textContent = message;
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+
+      function openTab(tabId) {
+        // Hide all tab contents
+        const tabContents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < tabContents.length; i++) {
+          tabContents[i].classList.remove("active");
+        }
+
+        // Remove active class from tab buttons
+        const tabButtons = document.getElementsByClassName("tab-button");
+        for (let i = 0; i < tabButtons.length; i++) {
+          tabButtons[i].classList.remove("active");
+        }
+
+        // Show selected tab content and mark button as active
+        document.getElementById(tabId).classList.add("active");
+        const activeButton = document.querySelector(
+          `.tab-button[onclick="openTab('${tabId}')"]`
+        );
+        activeButton.classList.add("active");
+      }
+
+      function showPopup(title, content) {
+        document.getElementById("popup-title").textContent = title;
+        document.getElementById("popup-content").innerHTML = content;
+        document.getElementById("popup-overlay").style.display = "block";
+        document.getElementById("popup").style.display = "block";
+      }
+
+      function closePopup() {
+        document.getElementById("popup-overlay").style.display = "none";
+        document.getElementById("popup").style.display = "none";
+      }
+
+      // Initialize the environment when the page loads
+      window.onload = function () {
+        initializeEnvironment();
+        logMessage('Environment initialized. Click "Start Training" to begin!');
+
+        // Show concept popup with a delay
+        setTimeout(() => {
+          showPopup(
+            "Welcome to PPO Simulation",
+            `
+                    <p>This simulation demonstrates Proximal Policy Optimization (PPO), a reinforcement learning algorithm.</p>
+                    <p>In this grid world:</p>
+                    <ul>
+                        <li>The agent (blue circle) must learn to navigate to the goal (green square)</li>
+                        <li>You can place obstacles (red squares) by clicking the "Place Obstacles" button</li>
+                        <li>The agent receives rewards for approaching the goal and penalties for hitting obstacles</li>
+                        <li>PPO helps the agent learn efficiently by preventing large policy updates</li>
+                    </ul>
+                    <p>Try experimenting with different parameters to see how they affect learning!</p>
+                `
+          );
+        }, 1000);
+      };
+      // Animation speed control
+      let animationSpeed = "normal";
+      const animationSpeeds = {
+        slow: 300,
+        normal: 100,
+        fast: 20,
+      };
+
+      function toggleAnimationSpeed() {
+        const speedBtn = document.getElementById("animation-speed-btn");
+
+        if (animationSpeed === "slow") {
+          animationSpeed = "normal";
+          speedBtn.textContent = "Animation Speed: Normal";
+        } else if (animationSpeed === "normal") {
+          animationSpeed = "fast";
+          speedBtn.textContent = "Animation Speed: Fast";
+        } else {
+          animationSpeed = "slow";
+          speedBtn.textContent = "Animation Speed: Slow";
+        }
+      }
+
+      // Update animation speed in relevant functions
+      async function runTrainingLoop() {
+        while (isTraining && episode < maxEpisodes) {
+          await runEpisode();
+          updateTrainingProgress();
+
+          // Use dynamic animation speed
+          await new Promise((resolve) =>
+            setTimeout(resolve, animationSpeeds[animationSpeed])
+          );
+        }
+
+        if (episode >= maxEpisodes) {
+          logMessage("Training complete!");
+          isTraining = false;
+          document.getElementById("start-btn").textContent = "Start Training";
+        }
+      }
+
+      async function executeStep() {
+        const stateKey = `${agentPos.x},${agentPos.y}`;
+        const policy = policyNetwork[stateKey];
+
+        // Choose action based on policy
+        const action = sampleAction(policy);
+
+        // Store old position
+        const oldPos = { ...agentPos };
+
+        // Move agent
+        const movementSuccessful = moveAgent(action);
+
+        // Calculate reward
+        const reward = calculateReward(oldPos, movementSuccessful);
+        totalReward += reward;
+        updateReward(totalReward);
+
+        // Check if episode is done
+        const done = agentPos.x === goalPos.x && agentPos.y === goalPos.y;
+
+        // Render the grid
+        renderGrid();
+
+        // Store trajectory
+        const newStateKey = `${agentPos.x},${agentPos.y}`;
+        trajectories.push({
+          state: stateKey,
+          action,
+          reward,
+          nextState: newStateKey,
+          done,
+        });
+
+        // Use dynamic animation speed
+        await new Promise((resolve) =>
+          setTimeout(resolve, animationSpeeds[animationSpeed] / 2)
+        );
+
+        return done;
+      }
+    </script>
+
+    <footer
+      style="
+        text-align: center;
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #ddd;
+      "
+    >
+      &copy; 2025 Pejman Ebrahimi - All Rights Reserved
+    </footer>
+  </body>
+</html>

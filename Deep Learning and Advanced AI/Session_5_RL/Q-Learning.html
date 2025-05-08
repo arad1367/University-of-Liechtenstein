@@ -1,0 +1,1729 @@
+<!-- Q-Learning Simulation By Pejman Ebrahimi -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q-Learning Simulation by Pejman Ebrahimi</title>
+    <style>
+      :root {
+        --primary: #3f51b5;
+        --primary-light: #757de8;
+        --primary-dark: #002984;
+        --accent: #ff4081;
+        --accent-light: #ff79b0;
+        --accent-dark: #c60055;
+        --success: #4caf50;
+        --danger: #f44336;
+        --warning: #ff9800;
+        --dark: #212121;
+        --light: #fafafa;
+        --grid-size: 65px;
+        --border-radius: 8px;
+        --box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1),
+          0 3px 6px rgba(0, 0, 0, 0.15);
+        --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background-color: var(--light);
+        color: var(--dark);
+        line-height: 1.6;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-dark) 0%,
+          var(--primary) 100%
+        );
+        color: white;
+        padding: 2rem 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--box-shadow);
+      }
+
+      .container {
+        width: 90%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 0;
+      }
+
+      .header-content {
+        position: relative;
+        z-index: 10;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin: 0;
+        font-weight: 300;
+      }
+
+      .subtitle {
+        font-weight: 300;
+        margin-top: 0.5rem;
+        opacity: 0.9;
+      }
+
+      .attribution {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        font-weight: 400;
+        letter-spacing: 0.5px;
+        position: relative;
+        z-index: 10;
+      }
+
+      #stars-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        z-index: 1;
+      }
+
+      .star {
+        position: absolute;
+        background-color: #fff;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        opacity: 0;
+        animation: starAnimation 2s linear forwards;
+      }
+
+      @keyframes starAnimation {
+        0% {
+          transform: translate(0, 0) scale(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(var(--tx), var(--ty)) scale(1);
+          opacity: 0;
+        }
+      }
+
+      main {
+        flex: 1;
+        padding: 2rem 0;
+      }
+
+      .grid-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 2rem;
+      }
+
+      h2 {
+        font-weight: 400;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+      }
+
+      h3 {
+        font-weight: 400;
+        color: var(--primary-dark);
+        margin-bottom: 0.5rem;
+      }
+
+      .card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        transition: var(--transition);
+      }
+
+      .card:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1),
+          0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .flex-container {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .world-container {
+        flex: 1;
+      }
+
+      .world-wrapper {
+        display: flex;
+        gap: 2rem;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .grid-container,
+      .q-values-container {
+        display: grid;
+        grid-template-columns: repeat(5, var(--grid-size));
+        grid-template-rows: repeat(5, var(--grid-size));
+        gap: 5px;
+      }
+
+      .grid-cell {
+        position: relative;
+        background-color: white;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: var(--transition);
+      }
+
+      .grid-cell.obstacle {
+        background-color: var(--danger);
+        color: white;
+      }
+
+      .grid-cell.goal {
+        background-color: var(--success);
+        color: white;
+      }
+
+      .agent {
+        position: absolute;
+        width: 26px;
+        height: 26px;
+        background-color: var(--primary);
+        border-radius: 50%;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .trail {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: rgba(63, 81, 181, 0.3);
+        border-radius: 50%;
+        z-index: 5;
+        transform: scale(0);
+        animation: pulseTrail 1.5s ease-out forwards;
+      }
+
+      @keyframes pulseTrail {
+        0% {
+          transform: scale(0);
+          opacity: 0.6;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 0;
+        }
+      }
+
+      .q-cell {
+        background-color: white;
+        border-radius: 4px;
+        padding: 5px;
+        font-size: 0.7rem;
+        border: 1px solid #e0e0e0;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .q-arrow {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        transition: var(--transition);
+      }
+
+      .q-arrow.up {
+        top: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 0 6px 8px 6px;
+        border-color: transparent transparent rgba(63, 81, 181, var(--opacity))
+          transparent;
+      }
+
+      .q-arrow.right {
+        top: 50%;
+        right: 2px;
+        transform: translateY(-50%);
+        border-width: 6px 0 6px 8px;
+        border-color: transparent transparent transparent
+          rgba(63, 81, 181, var(--opacity));
+      }
+
+      .q-arrow.down {
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 8px 6px 0 6px;
+        border-color: rgba(63, 81, 181, var(--opacity)) transparent transparent
+          transparent;
+      }
+
+      .q-arrow.left {
+        top: 50%;
+        left: 2px;
+        transform: translateY(-50%);
+        border-width: 6px 8px 6px 0;
+        border-color: transparent rgba(63, 81, 181, var(--opacity)) transparent
+          transparent;
+      }
+
+      .q-value {
+        position: absolute;
+        font-size: 9px;
+        color: #666;
+        transition: var(--transition);
+      }
+
+      .q-value.best {
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .reward-display {
+        position: absolute;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 20;
+        opacity: 0;
+        animation: fadeUp 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+
+      @keyframes fadeUp {
+        0% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-30px);
+        }
+      }
+
+      .positive-reward {
+        color: var(--success);
+      }
+      .negative-reward {
+        color: var(--danger);
+      }
+
+      .control-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+
+      .control-panel {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .slider-container {
+        margin-bottom: 0.5rem;
+      }
+
+      .slider-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+      }
+
+      .slider-label .value {
+        font-weight: 500;
+        color: var(--primary);
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 6px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        appearance: none;
+        margin: 0.5rem 0;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        background: var(--primary);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: var(--primary);
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      input[type="range"]::-ms-thumb {
+        width: 16px;
+        height: 16px;
+        background: var(--primary);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .slider-description {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.25rem;
+      }
+
+      .mode-selector {
+        display: flex;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 0.75rem;
+        text-align: center;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: var(--transition);
+        font-weight: 500;
+      }
+
+      .mode-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      .mode-btn.active {
+        background-color: var(--primary);
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn-container {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+
+      button {
+        padding: 0.75rem 1.25rem;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: var(--transition);
+        font-weight: 500;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        flex: 1;
+      }
+
+      button:hover {
+        background-color: var(--primary-light);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      button.secondary {
+        background-color: #e0e0e0;
+        color: #333;
+      }
+
+      button.secondary:hover {
+        background-color: #d0d0d0;
+      }
+
+      .stats-card {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat-box {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        transition: var(--transition);
+      }
+
+      .stat-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        color: #666;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--primary);
+        margin-top: 0.25rem;
+      }
+
+      .chart-container {
+        height: 250px;
+        margin: 1.5rem 0;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        padding: 1rem;
+        position: relative;
+      }
+
+      .simple-chart {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .chart-bar {
+        position: absolute;
+        bottom: 0;
+        background-color: var(--primary);
+        border-radius: 4px 4px 0 0;
+        transition: height 0.3s ease;
+      }
+
+      .chart-line {
+        position: absolute;
+        bottom: 50%;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-label {
+        position: absolute;
+        bottom: -20px;
+        font-size: 10px;
+        text-align: center;
+        transform: translateX(-50%);
+        color: #666;
+      }
+
+      .chart-legend {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+      }
+
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+      }
+
+      .leaderboard {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .leaderboard th {
+        text-align: left;
+        padding: 0.75rem;
+        background-color: #f5f5f5;
+        font-weight: 500;
+      }
+
+      .leaderboard td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #eee;
+      }
+
+      .leaderboard tr:last-child td {
+        border-bottom: none;
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: var(--primary);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        opacity: 0;
+        transform: translateX(50px);
+        transition: var(--transition);
+        max-width: 300px;
+      }
+
+      .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .notification-title {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .notification-body {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        background-color: var(--primary-dark);
+        color: white;
+        margin-top: 2rem;
+      }
+
+      @media (max-width: 1200px) {
+        .grid-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .world-wrapper {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .grid-container,
+        .q-values-container {
+          margin: 0 auto;
+        }
+
+        .control-section {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-card {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        :root {
+          --grid-size: 50px;
+        }
+
+        .container {
+          width: 95%;
+          padding: 1rem 0;
+        }
+
+        h1 {
+          font-size: 1.8rem;
+        }
+
+        .control-panel {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Loading spinner for initial setup */
+      .loader {
+        border: 4px solid rgba(63, 81, 181, 0.1);
+        border-top: 4px solid var(--primary);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 2rem auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Exploration mode visual */
+      .explore-indicator {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 152, 0, 0.2);
+        border-radius: 4px;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div id="stars-container"></div>
+      <div class="header-content">
+        <h1>Q-Learning Simulation</h1>
+        <p class="subtitle">Reinforcement Learning in Action</p>
+        <div class="attribution">Designed by Pejman Ebrahimi</div>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <div class="loader" id="loader"></div>
+
+        <div class="grid-layout" id="main-content" style="display: none">
+          <div class="left-section">
+            <div class="card">
+              <h2>Interactive Environment</h2>
+              <div class="world-wrapper">
+                <div class="world-container">
+                  <h3>Grid World</h3>
+                  <div class="grid-container" id="grid-container"></div>
+                </div>
+
+                <div class="world-container">
+                  <h3>Q-Values</h3>
+                  <div class="q-values-container" id="q-values-container"></div>
+                </div>
+              </div>
+
+              <div class="legend">
+                <div class="legend-item">
+                  <div
+                    class="legend-color"
+                    style="background-color: var(--primary)"
+                  ></div>
+                  <span>Agent</span>
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-color"
+                    style="background-color: var(--success)"
+                  ></div>
+                  <span>Goal (+10)</span>
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-color"
+                    style="background-color: var(--danger)"
+                  ></div>
+                  <span>Obstacle (-5)</span>
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-color"
+                    style="background-color: rgba(63, 81, 181, 0.3)"
+                  ></div>
+                  <span>Path History</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>Learning Parameters</h2>
+              <div class="control-section">
+                <div class="control-panel">
+                  <div class="slider-container">
+                    <div class="slider-label">
+                      <span>Learning Rate (α)</span>
+                      <span class="value" id="learning-rate-value">0.1</span>
+                    </div>
+                    <input
+                      type="range"
+                      id="learning-rate"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                      value="0.1"
+                    />
+                    <div class="slider-description">
+                      How quickly the agent incorporates new information
+                    </div>
+                  </div>
+
+                  <div class="slider-container">
+                    <div class="slider-label">
+                      <span>Discount Factor (γ)</span>
+                      <span class="value" id="discount-factor-value">0.9</span>
+                    </div>
+                    <input
+                      type="range"
+                      id="discount-factor"
+                      min="0"
+                      max="0.99"
+                      step="0.01"
+                      value="0.9"
+                    />
+                    <div class="slider-description">
+                      How much future rewards matter
+                    </div>
+                  </div>
+                </div>
+
+                <div class="control-panel">
+                  <div class="slider-container">
+                    <div class="slider-label">
+                      <span>Exploration Rate (ε)</span>
+                      <span class="value" id="exploration-rate-value">0.3</span>
+                    </div>
+                    <input
+                      type="range"
+                      id="exploration-rate"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value="0.3"
+                    />
+                    <div class="slider-description">
+                      Chance of taking random actions
+                    </div>
+                  </div>
+
+                  <div class="slider-container">
+                    <div class="slider-label">
+                      <span>Animation Speed</span>
+                      <span class="value" id="animation-speed-value"
+                        >300ms</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      id="animation-speed"
+                      min="50"
+                      max="1000"
+                      step="50"
+                      value="300"
+                    />
+                    <div class="slider-description">
+                      How quickly the simulation runs
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mode-selector">
+                <div class="mode-btn active" id="learning-mode">
+                  Learning Mode
+                </div>
+                <div class="mode-btn" id="optimal-mode">
+                  Optimal Policy Mode
+                </div>
+              </div>
+
+              <div class="btn-container">
+                <button id="start-button">Start Learning</button>
+                <button id="step-button">Single Step</button>
+                <button id="reset-button" class="secondary">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="right-section">
+            <div class="card">
+              <h2>Performance Metrics</h2>
+              <div class="stats-card">
+                <div class="stat-box">
+                  <div class="stat-label">Episodes</div>
+                  <div class="stat-value" id="episode-count">0</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Current Steps</div>
+                  <div class="stat-value" id="step-count">0</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Success Rate</div>
+                  <div class="stat-value" id="success-rate">0%</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Avg. Steps</div>
+                  <div class="stat-value" id="avg-completion">0</div>
+                </div>
+              </div>
+
+              <h3>Learning Progress</h3>
+              <div class="chart-container">
+                <div class="simple-chart" id="steps-chart"></div>
+                <div class="chart-legend">
+                  <div class="legend-item">
+                    <div
+                      class="legend-color"
+                      style="background-color: var(--primary)"
+                    ></div>
+                    <span>Steps per Episode</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>Leaderboard - Best Paths</h2>
+              <table class="leaderboard">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Episode</th>
+                    <th>Steps</th>
+                    <th>Reward</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                  <tr>
+                    <td colspan="4" style="text-align: center">
+                      No successful episodes yet
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>© 2025 Pejman Ebrahimi • Interactive Q-Learning Simulation</p>
+    </footer>
+
+    <div class="notification" id="notification">
+      <div class="notification-title">
+        <span>🏆</span>
+        <span id="notification-title">New Record!</span>
+      </div>
+      <div class="notification-body" id="notification-message"></div>
+    </div>
+
+    <script>
+      // Environment setup
+      const gridSize = 5;
+      const numStates = gridSize * gridSize;
+      const numActions = 4; // Up, Right, Down, Left
+      const obstacles = [7, 8, 17]; // Obstacle positions
+      const goal = 24; // Goal position
+      let agentPos = 0; // Start position
+
+      // Rewards
+      const stepReward = -0.1; // Penalty for each step
+      const obstacleReward = -5; // Penalty for hitting obstacle
+      const goalReward = 10; // Reward for reaching goal
+
+      // Learning state
+      let qTable = Array(numStates)
+        .fill()
+        .map(() => Array(numActions).fill(0));
+      let isLearning = false;
+      let isSingleStep = false;
+      let episodes = 0;
+      let steps = 0;
+      let episodeSteps = 0;
+      let stepsHistory = [];
+      let rewardsHistory = [];
+      let successCount = 0;
+      let totalCompletionSteps = 0;
+      let bestPathSteps = Infinity;
+      let leaderboard = [];
+      let currentEpisodeReward = 0;
+      let isOptimalMode = false;
+      let lastActionWasExploration = false;
+
+      // Agent parameters
+      let learningRate = 0.1;
+      let discountFactor = 0.9;
+      let explorationRate = 0.3;
+      let animationSpeed = 300;
+
+      // DOM Elements
+      const loader = document.getElementById("loader");
+      const mainContent = document.getElementById("main-content");
+      const gridContainer = document.getElementById("grid-container");
+      const qValuesContainer = document.getElementById("q-values-container");
+      const startButton = document.getElementById("start-button");
+      const stepButton = document.getElementById("step-button");
+      const resetButton = document.getElementById("reset-button");
+      const learningModeBtn = document.getElementById("learning-mode");
+      const optimalModeBtn = document.getElementById("optimal-mode");
+      const episodeCountEl = document.getElementById("episode-count");
+      const stepCountEl = document.getElementById("step-count");
+      const successRateEl = document.getElementById("success-rate");
+      const avgCompletionEl = document.getElementById("avg-completion");
+      const leaderboardBody = document.getElementById("leaderboard-body");
+      const notification = document.getElementById("notification");
+      const stepsChart = document.getElementById("steps-chart");
+
+      // Parameter sliders
+      const learningRateSlider = document.getElementById("learning-rate");
+      const learningRateValue = document.getElementById("learning-rate-value");
+      const discountFactorSlider = document.getElementById("discount-factor");
+      const discountFactorValue = document.getElementById(
+        "discount-factor-value"
+      );
+      const explorationRateSlider = document.getElementById("exploration-rate");
+      const explorationRateValue = document.getElementById(
+        "exploration-rate-value"
+      );
+      const animationSpeedSlider = document.getElementById("animation-speed");
+      const animationSpeedValue = document.getElementById(
+        "animation-speed-value"
+      );
+
+      // Update parameters from sliders
+      learningRateSlider.addEventListener("input", function () {
+        learningRate = parseFloat(this.value);
+        learningRateValue.textContent = learningRate.toFixed(2);
+      });
+
+      discountFactorSlider.addEventListener("input", function () {
+        discountFactor = parseFloat(this.value);
+        discountFactorValue.textContent = discountFactor.toFixed(2);
+      });
+
+      explorationRateSlider.addEventListener("input", function () {
+        explorationRate = parseFloat(this.value);
+        explorationRateValue.textContent = explorationRate.toFixed(2);
+      });
+
+      animationSpeedSlider.addEventListener("input", function () {
+        animationSpeed = parseInt(this.value);
+        animationSpeedValue.textContent = animationSpeed + "ms";
+      });
+
+      // Mode selection
+      learningModeBtn.addEventListener("click", function () {
+        if (isOptimalMode) {
+          isOptimalMode = false;
+          learningModeBtn.classList.add("active");
+          optimalModeBtn.classList.remove("active");
+        }
+      });
+
+      optimalModeBtn.addEventListener("click", function () {
+        if (!isOptimalMode) {
+          isOptimalMode = true;
+          optimalModeBtn.classList.add("active");
+          learningModeBtn.classList.remove("active");
+        }
+      });
+
+      // Create star animation for header
+      function createStars() {
+        const starsContainer = document.getElementById("stars-container");
+        const numStars = 40;
+
+        for (let i = 0; i < numStars; i++) {
+          setTimeout(() => {
+            const star = document.createElement("div");
+            star.className = "star";
+
+            // Random position
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            star.style.left = `${x}%`;
+            star.style.top = `${y}%`;
+
+            // Random size
+            const size = Math.random() * 4 + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+
+            // Random direction
+            const tx = (Math.random() - 0.5) * 200;
+            const ty = (Math.random() - 0.5) * 200;
+            star.style.setProperty("--tx", `${tx}px`);
+            star.style.setProperty("--ty", `${ty}px`);
+
+            starsContainer.appendChild(star);
+
+            // Remove after animation
+            setTimeout(() => {
+              if (star) star.remove();
+            }, 2000);
+          }, i * 50);
+        }
+
+        // Repeat the animation
+        setTimeout(createStars, 4000);
+      }
+
+      // Initialize environment
+      function initializeGrid() {
+        gridContainer.innerHTML = "";
+        qValuesContainer.innerHTML = "";
+
+        // Create grid cells and q-value cells
+        for (let i = 0; i < numStates; i++) {
+          // Grid cell
+          const cell = document.createElement("div");
+          cell.className = "grid-cell";
+          cell.dataset.index = i;
+
+          if (obstacles.includes(i)) {
+            cell.classList.add("obstacle");
+            cell.textContent = "🚫";
+          } else if (i === goal) {
+            cell.classList.add("goal");
+            cell.textContent = "🏆";
+          }
+
+          gridContainer.appendChild(cell);
+
+          // Q-value cell
+          const qCell = document.createElement("div");
+          qCell.className = "q-cell";
+          qCell.dataset.index = i;
+
+          // Add arrows for each action
+          const directions = ["up", "right", "down", "left"];
+          for (let j = 0; j < numActions; j++) {
+            const arrow = document.createElement("div");
+            arrow.className = `q-arrow ${directions[j]}`;
+            arrow.dataset.action = j;
+            arrow.style.setProperty("--opacity", "0.2");
+            qCell.appendChild(arrow);
+
+            const value = document.createElement("div");
+            value.className = "q-value";
+            value.dataset.action = j;
+            value.textContent = "0.00";
+            qCell.appendChild(value);
+          }
+
+          // Position the q-values within the cell
+          const values = qCell.querySelectorAll(".q-value");
+          values[0].style.position = "absolute";
+          values[0].style.top = "5px";
+          values[0].style.left = "50%";
+          values[0].style.transform = "translateX(-50%)";
+
+          values[1].style.position = "absolute";
+          values[1].style.top = "50%";
+          values[1].style.right = "5px";
+          values[1].style.transform = "translateY(-50%)";
+
+          values[2].style.position = "absolute";
+          values[2].style.bottom = "5px";
+          values[2].style.left = "50%";
+          values[2].style.transform = "translateX(-50%)";
+
+          values[3].style.position = "absolute";
+          values[3].style.top = "50%";
+          values[3].style.left = "5px";
+          values[3].style.transform = "translateY(-50%)";
+
+          qValuesContainer.appendChild(qCell);
+        }
+
+        // Add agent
+        const startCell = document.querySelector(
+          `.grid-cell[data-index="${agentPos}"]`
+        );
+        const agent = document.createElement("div");
+        agent.className = "agent";
+        agent.id = "agent";
+        startCell.appendChild(agent);
+      }
+
+      // Create a simple chart without external libraries
+      function updateSimpleChart() {
+        if (stepsHistory.length === 0) return;
+
+        // Clear chart
+        stepsChart.innerHTML = "";
+
+        // Find max value for scaling
+        const maxSteps = Math.max(...stepsHistory);
+        const chartWidth = stepsChart.clientWidth;
+        const chartHeight = stepsChart.clientHeight;
+        const barWidth = Math.max(5, chartWidth / stepsHistory.length - 4);
+
+        // Create bars
+        stepsHistory.forEach((steps, i) => {
+          // Calculate height percentage
+          const heightPercent = steps / maxSteps;
+          const barHeight = heightPercent * chartHeight * 0.8;
+
+          // Create bar
+          const bar = document.createElement("div");
+          bar.className = "chart-bar";
+          bar.style.height = `${barHeight}px`;
+          bar.style.width = `${barWidth}px`;
+          bar.style.left = `${i * (chartWidth / stepsHistory.length)}px`;
+
+          // Add tooltip
+          bar.title = `Episode ${i + 1}: ${steps} steps`;
+
+          // Add to chart
+          stepsChart.appendChild(bar);
+
+          // Add label every 5 episodes
+          if ((i + 1) % 5 === 0 || i === 0) {
+            const label = document.createElement("div");
+            label.className = "chart-label";
+            label.textContent = i + 1;
+            label.style.left = `${
+              i * (chartWidth / stepsHistory.length) + barWidth / 2
+            }px`;
+            stepsChart.appendChild(label);
+          }
+        });
+
+        // Add mid line
+        const midLine = document.createElement("div");
+        midLine.className = "chart-line";
+        stepsChart.appendChild(midLine);
+      }
+
+      // Show notification
+      function showNotification(title, message, duration = 3000) {
+        document.getElementById("notification-title").textContent = title;
+        document.getElementById("notification-message").textContent = message;
+        notification.classList.add("show");
+
+        setTimeout(() => {
+          notification.classList.remove("show");
+        }, duration);
+      }
+
+      // Update leaderboard
+      // Update leaderboard
+      function updateLeaderboard() {
+        // First sort by positive vs negative reward, then by steps
+        leaderboard.sort((a, b) => {
+          // First, prioritize positive rewards over negative ones
+          if (
+            (a.reward > 0 && b.reward < 0) ||
+            (a.reward >= 0 && b.reward < 0)
+          ) {
+            return -1;
+          }
+          if (
+            (a.reward < 0 && b.reward > 0) ||
+            (a.reward < 0 && b.reward >= 0)
+          ) {
+            return 1;
+          }
+
+          // If both are positive, higher reward wins
+          if (a.reward > 0 && b.reward > 0) {
+            // If rewards are close, sort by steps
+            if (Math.abs(a.reward - b.reward) < 1) {
+              return a.steps - b.steps;
+            }
+            // Otherwise, higher reward wins
+            return b.reward - a.reward;
+          }
+
+          // If both are negative, less negative reward wins
+          if (a.reward < 0 && b.reward < 0) {
+            return b.reward - a.reward;
+          }
+
+          // If both rewards are exactly the same, sort by steps
+          return a.steps - b.steps;
+        });
+
+        // Keep only top 5
+        if (leaderboard.length > 5) {
+          leaderboard = leaderboard.slice(0, 5);
+        }
+
+        // Update display
+        leaderboardBody.innerHTML = "";
+
+        if (leaderboard.length === 0) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 4;
+          cell.style.textAlign = "center";
+          cell.textContent = "No successful episodes yet";
+          row.appendChild(cell);
+          leaderboardBody.appendChild(row);
+        } else {
+          leaderboard.forEach((entry, index) => {
+            const row = document.createElement("tr");
+
+            const rankCell = document.createElement("td");
+            rankCell.textContent = index + 1;
+            row.appendChild(rankCell);
+
+            const episodeCell = document.createElement("td");
+            episodeCell.textContent = entry.episode;
+            row.appendChild(episodeCell);
+
+            const stepsCell = document.createElement("td");
+            stepsCell.textContent = entry.steps;
+            row.appendChild(stepsCell);
+
+            const rewardCell = document.createElement("td");
+            rewardCell.textContent = entry.reward.toFixed(1);
+            // Add color to reward based on value
+            if (entry.reward > 0) {
+              rewardCell.style.color = "var(--success)";
+            } else if (entry.reward < 0) {
+              rewardCell.style.color = "var(--danger)";
+            }
+            row.appendChild(rewardCell);
+
+            leaderboardBody.appendChild(row);
+          });
+        }
+      }
+
+      // Update Q-value visualization
+      function updateQValues() {
+        for (let i = 0; i < numStates; i++) {
+          const qCell = qValuesContainer.querySelector(
+            `.q-cell[data-index="${i}"]`
+          );
+
+          // Skip obstacles and goal
+          if (obstacles.includes(i) || i === goal) continue;
+
+          // Find max Q-value for this state
+          const maxQ = Math.max(...qTable[i]);
+          const bestAction = qTable[i].indexOf(maxQ);
+
+          // Update each action's display
+          for (let j = 0; j < numActions; j++) {
+            const qValue = qTable[i][j];
+            const valueEl = qCell.querySelector(`.q-value[data-action="${j}"]`);
+            const arrowEl = qCell.querySelector(`.q-arrow[data-action="${j}"]`);
+
+            // Update value text
+            valueEl.textContent = qValue.toFixed(2);
+
+            // Update styling for best action
+            if (j === bestAction && maxQ > 0) {
+              valueEl.classList.add("best");
+            } else {
+              valueEl.classList.remove("best");
+            }
+
+            // Update arrow opacity based on value
+            const opacity =
+              qValue <= 0 ? 0.1 : Math.min(0.2 + (qValue / 10) * 0.8, 1);
+            arrowEl.style.setProperty("--opacity", opacity);
+          }
+        }
+      }
+
+      // Get action based on Q-values and exploration rate
+      function getAction(state) {
+        // In optimal mode, always choose best action
+        if (isOptimalMode) {
+          const maxQ = Math.max(...qTable[state]);
+          // If all values are 0, take a random action instead
+          if (maxQ === 0 && qTable[state].every((val) => val === 0)) {
+            return Math.floor(Math.random() * numActions);
+          }
+          return qTable[state].indexOf(maxQ);
+        }
+
+        // Exploration (random action)
+        if (Math.random() < explorationRate) {
+          lastActionWasExploration = true;
+          return Math.floor(Math.random() * numActions);
+        }
+
+        // Exploitation (best action)
+        lastActionWasExploration = false;
+        return qTable[state].indexOf(Math.max(...qTable[state]));
+      }
+
+      // Get next state based on current state and action
+      function getNextState(state, action) {
+        let row = Math.floor(state / gridSize);
+        let col = state % gridSize;
+        let newRow = row;
+        let newCol = col;
+
+        // Move according to action (0=Up, 1=Right, 2=Down, 3=Left)
+        switch (action) {
+          case 0:
+            newRow = Math.max(0, row - 1);
+            break;
+          case 1:
+            newCol = Math.min(gridSize - 1, col + 1);
+            break;
+          case 2:
+            newRow = Math.min(gridSize - 1, row + 1);
+            break;
+          case 3:
+            newCol = Math.max(0, col - 1);
+            break;
+        }
+
+        return newRow * gridSize + newCol;
+      }
+
+      // Get reward for a given state
+      function getReward(state) {
+        if (state === goal) return goalReward;
+        if (obstacles.includes(state)) return obstacleReward;
+        return stepReward;
+      }
+
+      // Check if episode is done
+      function isDone(state) {
+        return state === goal; // Only goal state ends episode - obstacles don't terminate episode
+      }
+
+      // Move agent
+      function moveAgent(newPos) {
+        const agent = document.getElementById("agent");
+        if (agent) agent.remove();
+
+        const cell = document.querySelector(
+          `.grid-cell[data-index="${newPos}"]`
+        );
+        const newAgent = document.createElement("div");
+        newAgent.className = "agent";
+        newAgent.id = "agent";
+        cell.appendChild(newAgent);
+
+        // Add trail effect
+        const oldCell = document.querySelector(
+          `.grid-cell[data-index="${agentPos}"]`
+        );
+        if (oldCell && agentPos !== newPos) {
+          const trail = document.createElement("div");
+          trail.className = "trail";
+          oldCell.appendChild(trail);
+
+          // Remove trail after a delay
+          setTimeout(() => {
+            if (trail) trail.remove();
+          }, 2000);
+        }
+
+        // Show exploration indicator
+        if (lastActionWasExploration) {
+          const exploreIndicator = document.createElement("div");
+          exploreIndicator.className = "explore-indicator";
+          exploreIndicator.innerHTML = "🔍";
+          cell.appendChild(exploreIndicator);
+
+          setTimeout(() => {
+            if (exploreIndicator) exploreIndicator.remove();
+          }, animationSpeed * 0.8);
+        }
+
+        agentPos = newPos;
+      }
+
+      // Display reward
+      function displayReward(reward, pos) {
+        const cell = document.querySelector(`.grid-cell[data-index="${pos}"]`);
+        const display = document.createElement("div");
+        display.className = "reward-display";
+
+        if (reward > 0) {
+          display.classList.add("positive-reward");
+          display.textContent = `+${reward}`;
+        } else {
+          display.classList.add("negative-reward");
+          display.textContent = reward;
+        }
+
+        cell.appendChild(display);
+
+        // Remove after animation completes
+        setTimeout(() => {
+          if (display) display.remove();
+        }, 1500);
+      }
+
+      // Update statistics
+      function updateStats() {
+        episodeCountEl.textContent = episodes;
+        stepCountEl.textContent = episodeSteps;
+
+        // Success rate
+        if (episodes > 0) {
+          const rate = Math.round((successCount / episodes) * 100);
+          successRateEl.textContent = `${rate}%`;
+        }
+
+        // Average completion steps
+        if (successCount > 0) {
+          const avg = Math.round(totalCompletionSteps / successCount);
+          avgCompletionEl.textContent = avg;
+        }
+      }
+
+      // Take a step in the environment
+      function step() {
+        if (!isLearning && !isSingleStep) return;
+
+        // Choose action
+        const action = getAction(agentPos);
+
+        // Get new state and reward
+        const newState = getNextState(agentPos, action);
+        const reward = getReward(newState);
+
+        // Update total reward for this episode
+        currentEpisodeReward += reward;
+
+        // Update Q-value
+        if (!isOptimalMode) {
+          const maxFutureQ = Math.max(...qTable[newState]);
+          qTable[agentPos][action] =
+            qTable[agentPos][action] +
+            learningRate *
+              (reward + discountFactor * maxFutureQ - qTable[agentPos][action]);
+        }
+
+        // Move agent
+        moveAgent(newState);
+        displayReward(reward, newState);
+
+        // Update display
+        updateQValues();
+
+        // Update counters
+        steps++;
+        episodeSteps++;
+        updateStats();
+
+        // Check if episode is done (only when reaching goal, not obstacles)
+        if (isDone(newState) || episodeSteps > 100) {
+          // If it reached the goal successfully
+          if (newState === goal) {
+            successCount++;
+            totalCompletionSteps += episodeSteps;
+
+            // Check if it's a new record
+            if (episodeSteps < bestPathSteps) {
+              bestPathSteps = episodeSteps;
+
+              // Show notification
+              showNotification(
+                "New Record!",
+                `Episode ${
+                  episodes + 1
+                } found the goal in just ${episodeSteps} steps with a total reward of ${currentEpisodeReward.toFixed(
+                  1
+                )}!`
+              );
+            }
+
+            // Add to leaderboard
+            leaderboard.push({
+              episode: episodes + 1,
+              steps: episodeSteps,
+              reward: currentEpisodeReward,
+            });
+            updateLeaderboard();
+          }
+
+          // Reset for next episode
+          setTimeout(() => {
+            episodes++;
+
+            // Store episode data for chart
+            stepsHistory.push(episodeSteps);
+            rewardsHistory.push(currentEpisodeReward);
+            updateSimpleChart();
+
+            // Reduce exploration rate over time
+            if (!isOptimalMode) {
+              explorationRate = Math.max(0.01, explorationRate * 0.99);
+              explorationRateValue.textContent = explorationRate.toFixed(2);
+              explorationRateSlider.value = explorationRate;
+            }
+
+            // Reset agent position
+            agentPos = 0;
+            moveAgent(agentPos);
+            episodeSteps = 0;
+            currentEpisodeReward = 0;
+            updateStats();
+
+            // Continue learning if not single step
+            if (isLearning && !isSingleStep) {
+              setTimeout(step, animationSpeed);
+            } else {
+              isSingleStep = false;
+            }
+          }, animationSpeed);
+        } else {
+          // Continue episode
+          if (isLearning && !isSingleStep) {
+            setTimeout(step, animationSpeed);
+          } else {
+            isSingleStep = false;
+          }
+        }
+      }
+
+      // Reset environment
+      function resetEnvironment() {
+        if (isLearning) {
+          isLearning = false;
+          startButton.textContent = "Start Learning";
+        }
+
+        // Clear trails
+        document.querySelectorAll(".trail").forEach((trail) => trail.remove());
+        document
+          .querySelectorAll(".reward-display")
+          .forEach((display) => display.remove());
+        document
+          .querySelectorAll(".explore-indicator")
+          .forEach((indicator) => indicator.remove());
+
+        // Reset agent position
+        agentPos = 0;
+        moveAgent(agentPos);
+
+        // Reset learning state
+        qTable = Array(numStates)
+          .fill()
+          .map(() => Array(numActions).fill(0));
+        episodes = 0;
+        steps = 0;
+        episodeSteps = 0;
+        stepsHistory = [];
+        rewardsHistory = [];
+        successCount = 0;
+        totalCompletionSteps = 0;
+        bestPathSteps = Infinity;
+        leaderboard = [];
+        currentEpisodeReward = 0;
+
+        // Reset parameters to defaults
+        learningRate = 0.1;
+        discountFactor = 0.9;
+        explorationRate = 0.3;
+
+        // Update sliders
+        learningRateSlider.value = learningRate;
+        learningRateValue.textContent = learningRate.toFixed(2);
+        discountFactorSlider.value = discountFactor;
+        discountFactorValue.textContent = discountFactor.toFixed(2);
+        explorationRateSlider.value = explorationRate;
+        explorationRateValue.textContent = explorationRate.toFixed(2);
+
+        // Update display
+        updateQValues();
+        updateStats();
+        updateLeaderboard();
+        updateSimpleChart();
+      }
+
+      // Start/stop learning
+      startButton.addEventListener("click", function () {
+        if (isLearning) {
+          isLearning = false;
+          startButton.textContent = "Start Learning";
+        } else {
+          isLearning = true;
+          startButton.textContent = "Pause Learning";
+          step();
+        }
+      });
+
+      // Single step
+      stepButton.addEventListener("click", function () {
+        if (!isLearning) {
+          isSingleStep = true;
+          step();
+        }
+      });
+
+      // Reset environment
+      resetButton.addEventListener("click", resetEnvironment);
+
+      // Initialize
+      window.onload = function () {
+        // Show loader while initializing
+        setTimeout(() => {
+          initializeGrid();
+          updateQValues();
+          createStars();
+
+          // Hide loader and show main content
+          loader.style.display = "none";
+          mainContent.style.display = "grid";
+
+          // Show welcome notification
+          showNotification(
+            "Welcome!",
+            'Click "Start Learning" to begin the Q-Learning simulation.',
+            5000
+          );
+        }, 800);
+      };
+    </script>
+  </body>
+</html>

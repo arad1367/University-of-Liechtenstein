@@ -1,0 +1,717 @@
+<!-- Airplane Simulator By Pejman Ebrahimi -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple RL Airplane Simulator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f8ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      canvas {
+        background: linear-gradient(to bottom, #87ceeb, #e0f7ff);
+        border: 1px solid #333;
+        margin-bottom: 20px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        max-width: 800px;
+        margin-bottom: 20px;
+      }
+
+      .control-group {
+        background-color: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        min-width: 250px;
+      }
+
+      h1,
+      h2 {
+        color: #1e3a8a;
+      }
+
+      button {
+        padding: 10px 15px;
+        margin: 5px;
+        background-color: #1e3a8a;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #162a61;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .param-group {
+        margin-bottom: 10px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      .footer {
+        margin-top: 30px;
+        text-align: center;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Simple RL Airplane Simulator</h1>
+
+    <canvas id="canvas" width="600" height="400"></canvas>
+
+    <div class="controls">
+      <div class="control-group">
+        <h2>RL Parameters</h2>
+
+        <div class="param-group">
+          <label for="learningRate"
+            >Learning Rate: <span id="learningRateValue">0.1</span></label
+          >
+          <input
+            type="range"
+            id="learningRate"
+            min="0.01"
+            max="0.5"
+            step="0.01"
+            value="0.1"
+          />
+        </div>
+
+        <div class="param-group">
+          <label for="epsilon"
+            >Exploration Rate: <span id="epsilonValue">0.3</span></label
+          >
+          <input
+            type="range"
+            id="epsilon"
+            min="0.01"
+            max="1"
+            step="0.01"
+            value="0.3"
+          />
+        </div>
+
+        <div class="param-group">
+          <label for="gamma"
+            >Discount Factor: <span id="gammaValue">0.9</span></label
+          >
+          <input
+            type="range"
+            id="gamma"
+            min="0.5"
+            max="0.99"
+            step="0.01"
+            value="0.9"
+          />
+        </div>
+
+        <button id="startBtn">Start Learning</button>
+        <button id="resetBtn">Reset Agent</button>
+        <button id="toggleHumanBtn">Toggle Human Control</button>
+      </div>
+
+      <div class="control-group">
+        <h2>Statistics</h2>
+        <p>Episode: <span id="episodeCounter">0</span></p>
+        <p>Current Reward: <span id="currentReward">0</span></p>
+        <p>Average Reward: <span id="avgReward">0</span></p>
+        <p>Altitude: <span id="altitude">100</span> m</p>
+        <p>Speed: <span id="speed">150</span> km/h</p>
+        <p>Pitch: <span id="pitch">0</span>°</p>
+        <p>Human Control: <span id="humanControlStatus">Off</span></p>
+      </div>
+    </div>
+
+    <div class="control-group" style="width: 100%; max-width: 800px">
+      <h2>Learning Progress</h2>
+      <div
+        id="infoPanel"
+        style="
+          height: 100px;
+          overflow-y: auto;
+          border: 1px solid #ccc;
+          padding: 10px;
+          background-color: #f9f9f9;
+        "
+      ></div>
+    </div>
+
+    <div class="footer">
+      <p>Flight Simulator Designed by Pejman</p>
+      <p>&copy; 2025 Pejman Ebrahimi - All Rights Reserved</p>
+    </div>
+
+    <script>
+      // Get canvas and context
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Game state
+      let isLearning = false;
+      let isHumanControl = false;
+      let frameCount = 0;
+      let episode = 0;
+      let currentReward = 0;
+      let rewardHistory = [];
+
+      // Airplane state
+      const airplane = {
+        x: 300,
+        y: 200,
+        altitude: 100,
+        speed: 150,
+        pitch: 0,
+        crashed: false,
+      };
+
+      // RL parameters
+      let learningRate = 0.1;
+      let epsilon = 0.3;
+      let gamma = 0.9;
+
+      // Q-learning variables
+      const qTable = {};
+      const actions = [
+        "nothing",
+        "pitch_up",
+        "pitch_down",
+        "throttle_up",
+        "throttle_down",
+      ];
+
+      // Key states for human control
+      const keys = {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+      };
+
+      // UI elements
+      const startBtn = document.getElementById("startBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const toggleHumanBtn = document.getElementById("toggleHumanBtn");
+      const infoPanel = document.getElementById("infoPanel");
+
+      // Initialize event listeners
+      function init() {
+        // Parameter sliders
+        document
+          .getElementById("learningRate")
+          .addEventListener("input", function () {
+            learningRate = parseFloat(this.value);
+            document.getElementById("learningRateValue").textContent =
+              learningRate.toFixed(2);
+          });
+
+        document
+          .getElementById("epsilon")
+          .addEventListener("input", function () {
+            epsilon = parseFloat(this.value);
+            document.getElementById("epsilonValue").textContent =
+              epsilon.toFixed(2);
+          });
+
+        document.getElementById("gamma").addEventListener("input", function () {
+          gamma = parseFloat(this.value);
+          document.getElementById("gammaValue").textContent = gamma.toFixed(2);
+        });
+
+        // Buttons
+        startBtn.addEventListener("click", function () {
+          console.log("Start button clicked");
+          if (!isLearning) {
+            isLearning = true;
+            isHumanControl = false;
+            episode = 0;
+            resetAirplane();
+            startBtn.textContent = "Learning...";
+            startBtn.disabled = true;
+            document.getElementById("humanControlStatus").textContent = "Off";
+            logInfo("Started learning process");
+          }
+        });
+
+        resetBtn.addEventListener("click", function () {
+          isLearning = false;
+          resetAirplane();
+          qTable = {};
+          episode = 0;
+          rewardHistory = [];
+          startBtn.textContent = "Start Learning";
+          startBtn.disabled = false;
+          logInfo("Reset agent and Q-table");
+          updateStats();
+        });
+
+        toggleHumanBtn.addEventListener("click", function () {
+          isHumanControl = !isHumanControl;
+          isLearning = false;
+          document.getElementById("humanControlStatus").textContent =
+            isHumanControl ? "On" : "Off";
+          startBtn.disabled = isHumanControl;
+          resetAirplane();
+          logInfo(
+            isHumanControl
+              ? "Switched to manual control"
+              : "Switched to AI mode"
+          );
+        });
+
+        // Keyboard controls
+        window.addEventListener("keydown", function (e) {
+          if (isHumanControl) {
+            switch (e.key) {
+              case "ArrowUp":
+                keys.up = true;
+                break;
+              case "ArrowDown":
+                keys.down = true;
+                break;
+              case "ArrowLeft":
+                keys.left = true;
+                break;
+              case "ArrowRight":
+                keys.right = true;
+                break;
+            }
+          }
+        });
+
+        window.addEventListener("keyup", function (e) {
+          switch (e.key) {
+            case "ArrowUp":
+              keys.up = false;
+              break;
+            case "ArrowDown":
+              keys.down = false;
+              break;
+            case "ArrowLeft":
+              keys.left = false;
+              break;
+            case "ArrowRight":
+              keys.right = false;
+              break;
+          }
+        });
+
+        // Start game loop
+        gameLoop();
+      }
+
+      // Helper: Log info to panel
+      function logInfo(message) {
+        const entry = document.createElement("div");
+        entry.textContent = `Frame ${frameCount}: ${message}`;
+        infoPanel.appendChild(entry);
+        infoPanel.scrollTop = infoPanel.scrollHeight;
+        console.log(message); // Also log to console for debugging
+      }
+
+      // Helper: Reset airplane
+      function resetAirplane() {
+        airplane.x = 300;
+        airplane.y = 200;
+        airplane.altitude = 100;
+        airplane.speed = 150;
+        airplane.pitch = 0;
+        airplane.crashed = false;
+        frameCount = 0;
+        currentReward = 0;
+        updateStats();
+      }
+
+      // Helper: Update stats display
+      function updateStats() {
+        document.getElementById("episodeCounter").textContent = episode;
+        document.getElementById("currentReward").textContent =
+          currentReward.toFixed(1);
+        document.getElementById("altitude").textContent = Math.round(
+          airplane.altitude
+        );
+        document.getElementById("speed").textContent = Math.round(
+          airplane.speed
+        );
+        document.getElementById("pitch").textContent = Math.round(
+          airplane.pitch
+        );
+
+        // Calculate average reward
+        if (rewardHistory.length > 0) {
+          const sum = rewardHistory.reduce((a, b) => a + b, 0);
+          const avg = sum / rewardHistory.length;
+          document.getElementById("avgReward").textContent = avg.toFixed(1);
+        } else {
+          document.getElementById("avgReward").textContent = "0";
+        }
+      }
+
+      // RL: Get state key for Q-table
+      function getStateKey() {
+        // Discretize the continuous state
+        const altBucket = Math.floor(airplane.altitude / 50);
+        const speedBucket = Math.floor(airplane.speed / 20);
+        const pitchBucket = Math.floor(airplane.pitch / 5);
+
+        return `${altBucket}_${speedBucket}_${pitchBucket}`;
+      }
+
+      // RL: Choose action using epsilon-greedy policy
+      function chooseAction(stateKey) {
+        // Ensure state exists in Q-table
+        if (!qTable[stateKey]) {
+          qTable[stateKey] = {};
+          actions.forEach((action) => {
+            qTable[stateKey][action] = 0;
+          });
+        }
+
+        // Exploration: choose random action
+        if (Math.random() < epsilon) {
+          const randomAction =
+            actions[Math.floor(Math.random() * actions.length)];
+          logInfo(`Exploring: Random action ${randomAction}`);
+          return randomAction;
+        }
+
+        // Exploitation: choose best action
+        let bestAction = actions[0];
+        let bestValue = qTable[stateKey][bestAction];
+
+        actions.forEach((action) => {
+          if (qTable[stateKey][action] > bestValue) {
+            bestValue = qTable[stateKey][action];
+            bestAction = action;
+          }
+        });
+
+        logInfo(`Exploiting: Best action ${bestAction}`);
+        return bestAction;
+      }
+
+      // RL: Update Q-value
+      function updateQValue(stateKey, action, reward, nextStateKey) {
+        // Ensure states exist in Q-table
+        if (!qTable[stateKey]) {
+          qTable[stateKey] = {};
+          actions.forEach((a) => (qTable[stateKey][a] = 0));
+        }
+
+        if (!qTable[nextStateKey]) {
+          qTable[nextStateKey] = {};
+          actions.forEach((a) => (qTable[nextStateKey][a] = 0));
+        }
+
+        // Find max Q-value for next state
+        let maxNextQ = Math.max(...actions.map((a) => qTable[nextStateKey][a]));
+
+        // Update rule: Q(s,a) = Q(s,a) + α * (r + γ * max(Q(s')) - Q(s,a))
+        const oldValue = qTable[stateKey][action];
+        const newValue =
+          oldValue + learningRate * (reward + gamma * maxNextQ - oldValue);
+        qTable[stateKey][action] = newValue;
+
+        logInfo(
+          `Updated Q(${stateKey}, ${action}): ${oldValue.toFixed(
+            2
+          )} → ${newValue.toFixed(2)}`
+        );
+      }
+
+      // Apply the chosen action
+      function applyAction(action) {
+        switch (action) {
+          case "pitch_up":
+            airplane.pitch += 2;
+            break;
+          case "pitch_down":
+            airplane.pitch -= 2;
+            break;
+          case "throttle_up":
+            airplane.speed += 10;
+            break;
+          case "throttle_down":
+            airplane.speed -= 10;
+            break;
+          // 'nothing' case does nothing
+        }
+
+        // Clamp values to reasonable ranges
+        airplane.pitch = Math.max(-30, Math.min(30, airplane.pitch));
+        airplane.speed = Math.max(50, Math.min(300, airplane.speed));
+      }
+
+      // Apply human controls
+      function applyHumanControl() {
+        if (keys.up) {
+          airplane.pitch += 1;
+        }
+        if (keys.down) {
+          airplane.pitch -= 1;
+        }
+        if (keys.left) {
+          airplane.speed -= 2;
+        }
+        if (keys.right) {
+          airplane.speed += 2;
+        }
+
+        // Clamp values
+        airplane.pitch = Math.max(-30, Math.min(30, airplane.pitch));
+        airplane.speed = Math.max(50, Math.min(300, airplane.speed));
+      }
+
+      // Update physics
+      function updatePhysics() {
+        // Update altitude based on pitch and speed
+        const pitchFactor = Math.sin((airplane.pitch * Math.PI) / 180);
+        airplane.altitude += pitchFactor * airplane.speed * 0.05;
+
+        // Apply gravity
+        airplane.altitude -= 0.5;
+
+        // Add some turbulence
+        airplane.pitch += Math.random() - 0.5;
+
+        // Gradual return to level flight (stabilization)
+        airplane.pitch *= 0.98;
+
+        // Check for crash
+        if (airplane.altitude <= 0) {
+          airplane.altitude = 0;
+          airplane.crashed = true;
+          logInfo("CRASHED!");
+        }
+
+        updateStats();
+      }
+
+      // Calculate reward
+      function calculateReward() {
+        let reward = 0;
+
+        // Base reward for staying airborne
+        reward += 1;
+
+        // Reward for being at the target altitude (100-200m)
+        if (airplane.altitude > 100 && airplane.altitude < 200) {
+          reward += 2;
+        } else if (airplane.altitude < 50 || airplane.altitude > 300) {
+          reward -= 2;
+        }
+
+        // Reward for good speed
+        if (airplane.speed > 100 && airplane.speed < 200) {
+          reward += 1;
+        } else if (airplane.speed < 80 || airplane.speed > 220) {
+          reward -= 1;
+        }
+
+        // Penalty for extreme pitch
+        if (Math.abs(airplane.pitch) > 20) {
+          reward -= 2;
+        }
+
+        // Big penalty for crashing
+        if (airplane.crashed) {
+          reward -= 50;
+        }
+
+        return reward;
+      }
+
+      // Draw the scene
+      function draw() {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw sky
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGradient.addColorStop(0, "#1e90ff");
+        skyGradient.addColorStop(1, "#87ceeb");
+        ctx.fillStyle = skyGradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw ground
+        const groundY = canvas.height - airplane.altitude * 0.8;
+        if (groundY < canvas.height) {
+          ctx.fillStyle = "#8B4513";
+          ctx.fillRect(0, groundY, canvas.width, canvas.height);
+        }
+
+        // Draw airplane
+        ctx.save();
+        ctx.translate(airplane.x, airplane.y);
+        ctx.rotate((airplane.pitch * Math.PI) / 180);
+
+        // Draw airplane body
+        ctx.fillStyle = airplane.crashed ? "red" : "white";
+        ctx.beginPath();
+        ctx.moveTo(20, 0); // nose
+        ctx.lineTo(-20, 10); // bottom rear
+        ctx.lineTo(-10, 0); // tail
+        ctx.lineTo(-20, -10); // top rear
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw wings
+        ctx.fillStyle = "#ccc";
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-5, 30);
+        ctx.lineTo(5, 30);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-5, -30);
+        ctx.lineTo(5, -30);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Draw HUD
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "white";
+        ctx.fillText(`Altitude: ${Math.round(airplane.altitude)}m`, 20, 30);
+        ctx.fillText(`Speed: ${Math.round(airplane.speed)} km/h`, 20, 50);
+        ctx.fillText(`Pitch: ${Math.round(airplane.pitch)}°`, 20, 70);
+        ctx.fillText(
+          `Mode: ${isHumanControl ? "Human" : isLearning ? "Learning" : "AI"}`,
+          20,
+          90
+        );
+
+        // Draw altitude indicator
+        const altIndicatorX = canvas.width - 50;
+        const altIndicatorTop = 50;
+        const altIndicatorHeight = 300;
+
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(
+          altIndicatorX - 15,
+          altIndicatorTop,
+          30,
+          altIndicatorHeight
+        );
+
+        const markerPosition =
+          altIndicatorTop +
+          altIndicatorHeight -
+          (airplane.altitude / 200) * altIndicatorHeight;
+        ctx.fillStyle = "lime";
+        ctx.beginPath();
+        ctx.moveTo(altIndicatorX - 20, markerPosition);
+        ctx.lineTo(altIndicatorX, markerPosition - 10);
+        ctx.lineTo(altIndicatorX, markerPosition + 10);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Main game loop
+      function gameLoop() {
+        frameCount++;
+
+        if (isHumanControl) {
+          // Human control mode
+          applyHumanControl();
+          updatePhysics();
+        } else if (isLearning) {
+          // AI learning mode
+          const currentState = getStateKey();
+
+          // Choose and apply action
+          const action = chooseAction(currentState);
+          applyAction(action);
+
+          // Update physics
+          updatePhysics();
+
+          // Calculate reward
+          const reward = calculateReward();
+          currentReward += reward;
+
+          // Get next state
+          const nextState = getStateKey();
+
+          // Update Q-table
+          updateQValue(currentState, action, reward, nextState);
+
+          // Check if episode is complete
+          if (airplane.crashed || frameCount > 1000) {
+            // Log episode result
+            logInfo(
+              `Episode ${episode} finished with reward: ${currentReward.toFixed(
+                1
+              )}`
+            );
+            rewardHistory.push(currentReward);
+
+            // Move to next episode
+            episode++;
+            document.getElementById("episodeCounter").textContent = episode;
+
+            // Reset for next episode
+            resetAirplane();
+
+            // Reduce exploration rate over time (optional)
+            if (epsilon > 0.05) {
+              epsilon *= 0.99;
+              document.getElementById("epsilonValue").textContent =
+                epsilon.toFixed(2);
+              document.getElementById("epsilon").value = epsilon;
+            }
+          }
+        } else {
+          // Idle mode - just apply physics with small drone movement
+          if (frameCount % 60 === 0) {
+            // Make small random adjustments
+            airplane.pitch += (Math.random() - 0.5) * 2;
+          }
+          updatePhysics();
+        }
+
+        // Draw everything
+        draw();
+
+        // Continue game loop
+        requestAnimationFrame(gameLoop);
+      }
+
+      // Start everything
+      window.onload = init;
+    </script>
+  </body>
+</html>
