@@ -1,0 +1,1942 @@
+<!-- Vector Search Simulation By Pejman Ebrahimi -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vector Search Methods Comparison</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f7fa;
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: #2c3e50;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 40px;
+        font-size: 2.2em;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+      }
+
+      .search-type {
+        flex: 1 1 500px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        overflow: hidden;
+        transition: transform 0.2s;
+      }
+
+      .search-type:hover {
+        transform: translateY(-5px);
+      }
+
+      .search-header {
+        padding: 15px 20px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2em;
+      }
+
+      .search-content {
+        padding: 20px;
+        position: relative;
+      }
+
+      .enn .search-header {
+        background-color: #3498db;
+      }
+
+      .ann .search-header {
+        background-color: #e74c3c;
+      }
+
+      .semantic .search-header {
+        background-color: #2ecc71;
+      }
+
+      .sparse .search-header {
+        background-color: #9b59b6;
+      }
+
+      .canvas-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        overflow: hidden;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      select,
+      button {
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: white;
+        font-size: 14px;
+      }
+
+      button {
+        background: #3498db;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: #2980b9;
+      }
+
+      .step-display {
+        background: #f0f4f8;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 15px;
+        font-size: 14px;
+      }
+
+      .step-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+
+      .step-description {
+        color: #555;
+      }
+
+      ul.features {
+        padding-left: 20px;
+      }
+
+      .features li {
+        margin-bottom: 5px;
+      }
+
+      .distance-formula {
+        font-style: italic;
+        background: #f0f0f0;
+        padding: 5px;
+        border-radius: 4px;
+        margin: 5px 0;
+        display: inline-block;
+      }
+
+      .tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 100;
+        pointer-events: none;
+        display: none;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+      }
+
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+      }
+
+      .tabs {
+        display: flex;
+        margin-bottom: 15px;
+      }
+
+      .tab {
+        padding: 8px 15px;
+        background: #ddd;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px 4px 0 0;
+        margin-right: 2px;
+      }
+
+      .tab.active {
+        background: #f0f4f8;
+        font-weight: bold;
+      }
+
+      .tab-content {
+        display: none;
+        background: #f0f4f8;
+        padding: 15px;
+        border-radius: 0 4px 4px 4px;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+
+      table th,
+      table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+
+      table th {
+        background-color: #f0f4f8;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+
+      .comparison-table {
+        margin-top: 40px;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .search-type {
+          flex: 1 1 100%;
+        }
+
+        .controls {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vector Search Methods Comparison Simulation - By Pejman Ebrahimi</h1>
+
+    <div class="container">
+      <!-- ENN Search -->
+      <div class="search-type enn">
+        <div class="search-header">1. Exact Nearest Neighbor Search (ENN)</div>
+        <div class="search-content">
+          <p>
+            Finds the <strong>exact</strong> closest data points to a query by
+            calculating distances to all vectors in the dataset.
+          </p>
+
+          <div class="canvas-container">
+            <canvas id="ennCanvas" width="460" height="300"></canvas>
+            <div id="ennTooltip" class="tooltip"></div>
+          </div>
+
+          <div class="controls">
+            <div>
+              <label for="ennDistance">Distance Metric:</label>
+              <select id="ennDistance">
+                <option value="euclidean">Euclidean (L2)</option>
+                <option value="manhattan">Manhattan (L1)</option>
+                <option value="cosine">Cosine Similarity</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="ennStep">Step:</label>
+              <select id="ennStep">
+                <option value="0">0. Data points</option>
+                <option value="1">1. Calculate all distances</option>
+                <option value="2">2. Sort by distance</option>
+                <option value="3">3. Return nearest neighbors</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="step-display">
+            <div class="step-title" id="ennStepTitle">Step 0: Data points</div>
+            <div class="step-description" id="ennStepDesc">
+              Initial dataset with vectors in feature space. The query point
+              (red) will be compared against all data points.
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #3498db"></div>
+              <span>Dataset Points</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #e74c3c"></div>
+              <span>Query Point</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #2ecc71"></div>
+              <span>Nearest Neighbor</span>
+            </div>
+          </div>
+
+          <h3>Key Features:</h3>
+          <ul class="features">
+            <li>100% accuracy - finds the true nearest neighbors</li>
+            <li>
+              Computationally expensive for large datasets (O(n) complexity)
+            </li>
+            <li>
+              Becomes inefficient in high dimensions (curse of dimensionality)
+            </li>
+            <li>
+              Simple implementation - just calculate all distances and sort
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ANN Search -->
+      <div class="search-type ann">
+        <div class="search-header">
+          2. Approximate Nearest Neighbor Search (ANN)
+        </div>
+        <div class="search-content">
+          <p>
+            Sacrifices perfect accuracy for <strong>speed</strong> by using
+            efficient data structures to approximate nearest neighbors.
+          </p>
+
+          <div class="canvas-container">
+            <canvas id="annCanvas" width="460" height="300"></canvas>
+            <div id="annTooltip" class="tooltip"></div>
+          </div>
+
+          <div class="controls">
+            <div>
+              <label for="annAlgorithm">Algorithm:</label>
+              <select id="annAlgorithm">
+                <option value="hnsw">Hierarchical NSW</option>
+                <option value="pq">Product Quantization</option>
+                <option value="lsh">Locality-Sensitive Hashing</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="annStep">Step:</label>
+              <select id="annStep">
+                <option value="0">0. Indexed structure</option>
+                <option value="1">1. Navigate to region</option>
+                <option value="2">2. Local search</option>
+                <option value="3">3. Return approximate NN</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="step-display">
+            <div class="step-title" id="annStepTitle">
+              Step 0: Indexed structure
+            </div>
+            <div class="step-description" id="annStepDesc">
+              Data is pre-organized into efficient lookup structures that
+              cluster or partition the vector space for faster searching.
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #3498db"></div>
+              <span>Dataset Points</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #e74c3c"></div>
+              <span>Query Point</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #f39c12"></div>
+              <span>Search Region</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #2ecc71"></div>
+              <span>Returned Neighbors</span>
+            </div>
+          </div>
+
+          <h3>Key Features:</h3>
+          <ul class="features">
+            <li>
+              Much faster than ENN for large datasets (sub-linear time
+              complexity)
+            </li>
+            <li>Trades accuracy for speed (95-99% accurate typically)</li>
+            <li>Requires pre-processing to build index structures</li>
+            <li>Various algorithms optimized for different use cases</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Semantic Search -->
+      <div class="search-type semantic">
+        <div class="search-header">3. Semantic Search</div>
+        <div class="search-content">
+          <p>
+            Uses <strong>meaning</strong> of content rather than keywords by
+            searching through dense embedding vectors that capture semantic
+            relationships.
+          </p>
+
+          <div class="canvas-container">
+            <canvas id="semanticCanvas" width="460" height="300"></canvas>
+            <div id="semanticTooltip" class="tooltip"></div>
+          </div>
+
+          <div class="controls">
+            <div>
+              <label for="semanticModel">Embedding Model:</label>
+              <select id="semanticModel">
+                <option value="bert">BERT</option>
+                <option value="use">Universal Sentence Encoder</option>
+                <option value="custom">Domain-Specific</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="semanticStep">Step:</label>
+              <select id="semanticStep">
+                <option value="0">0. Text documents</option>
+                <option value="1">1. Generate embeddings</option>
+                <option value="2">2. Vector similarity search</option>
+                <option value="3">3. Return relevant results</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="step-display">
+            <div class="step-title" id="semanticStepTitle">
+              Step 0: Text documents
+            </div>
+            <div class="step-description" id="semanticStepDesc">
+              Starting with raw text documents or queries before encoding into
+              vector space.
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #3498db"></div>
+              <span>Document Embeddings</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #e74c3c"></div>
+              <span>Query Embedding</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #2ecc71"></div>
+              <span>Semantic Matches</span>
+            </div>
+          </div>
+
+          <h3>Key Features:</h3>
+          <ul class="features">
+            <li>Understands meaning beyond exact keyword matches</li>
+            <li>
+              Uses dense vector embeddings (typically 768-1536 dimensions)
+            </li>
+            <li>Trained on large text corpora to capture language patterns</li>
+            <li>
+              Effective for natural language, images, and multimodal content
+            </li>
+            <li>Usually implemented with ANN algorithms for efficiency</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Sparse Vector Search -->
+      <div class="search-type sparse">
+        <div class="search-header">4. Sparse Vector Search</div>
+        <div class="search-content">
+          <p>
+            Uses <strong>high-dimensional sparse vectors</strong> where most
+            elements are zero, optimized for keyword and token matching.
+          </p>
+
+          <div class="canvas-container">
+            <canvas id="sparseCanvas" width="460" height="300"></canvas>
+            <div id="sparseTooltip" class="tooltip"></div>
+          </div>
+
+          <div class="controls">
+            <div>
+              <label for="sparseModel">Representation:</label>
+              <select id="sparseModel">
+                <option value="tfidf">TF-IDF</option>
+                <option value="bm25">BM25</option>
+                <option value="hybrid">Hybrid (Sparse+Dense)</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="sparseStep">Step:</label>
+              <select id="sparseStep">
+                <option value="0">0. Tokenized content</option>
+                <option value="1">1. Create sparse vectors</option>
+                <option value="2">2. Inverted index search</option>
+                <option value="3">3. Return matches</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="step-display">
+            <div class="step-title" id="sparseStepTitle">
+              Step 0: Tokenized content
+            </div>
+            <div class="step-description" id="sparseStepDesc">
+              Documents broken down into tokens (words/terms) before converting
+              to sparse vector representation.
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #3498db"></div>
+              <span>Vocabulary Dimensions</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #e74c3c"></div>
+              <span>Query Terms</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #2ecc71"></div>
+              <span>Matching Terms</span>
+            </div>
+          </div>
+
+          <h3>Key Features:</h3>
+          <ul class="features">
+            <li>Efficient for exact matching and keyword search</li>
+            <li>Very high dimensionality (vocabulary size) but mostly zeros</li>
+            <li>Uses specialized inverted index for quick lookup</li>
+            <li>Good for precision when exact matches are required</li>
+            <li>Often combined with semantic search for hybrid approaches</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-table">
+      <h2>Comparison of Vector Search Methods</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Exact NN (ENN)</th>
+            <th>Approximate NN (ANN)</th>
+            <th>Semantic Search</th>
+            <th>Sparse Vector Search</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Accuracy</td>
+            <td>100% exact</td>
+            <td>High (95-99%)</td>
+            <td>Context dependent</td>
+            <td>High for exact matches</td>
+          </tr>
+          <tr>
+            <td>Speed</td>
+            <td>Slow (O(n))</td>
+            <td>Fast (sub-linear)</td>
+            <td>Moderate to fast</td>
+            <td>Very fast for keywords</td>
+          </tr>
+          <tr>
+            <td>Scalability</td>
+            <td>Poor</td>
+            <td>Good</td>
+            <td>Good with ANN</td>
+            <td>Excellent</td>
+          </tr>
+          <tr>
+            <td>Vector Type</td>
+            <td>Dense or Sparse</td>
+            <td>Usually Dense</td>
+            <td>Dense</td>
+            <td>Sparse</td>
+          </tr>
+          <tr>
+            <td>Use Cases</td>
+            <td>Small datasets, high precision required</td>
+            <td>Large-scale vector search, recommenders</td>
+            <td>NLP, content discovery, similar item search</td>
+            <td>Search engines, document retrieval</td>
+          </tr>
+          <tr>
+            <td>Common Metrics</td>
+            <td>Euclidean, Manhattan, Cosine</td>
+            <td>Euclidean, Inner Product, Cosine</td>
+            <td>Cosine, Dot Product</td>
+            <td>Jaccard, BM25, TF-IDF</td>
+          </tr>
+          <tr>
+            <td>Dimensions</td>
+            <td>Any</td>
+            <td>Moderate to high</td>
+            <td>High (768-1536 typical)</td>
+            <td>Very high (vocabulary size)</td>
+          </tr>
+          <tr>
+            <td>Example Tools</td>
+            <td>SciPy, NumPy</td>
+            <td>FAISS, Annoy, HNSW</td>
+            <td>Pinecone, Weaviate, Milvus</td>
+            <td>Elasticsearch, Lucene</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      // Common data and utility functions
+      const dataPoints = [
+        { id: 1, x: 80, y: 70, label: "P1" },
+        { id: 2, x: 160, y: 120, label: "P2" },
+        { id: 3, x: 240, y: 60, label: "P3" },
+        { id: 4, x: 300, y: 180, label: "P4" },
+        { id: 5, x: 400, y: 90, label: "P5" },
+        { id: 6, x: 180, y: 220, label: "P6" },
+        { id: 7, x: 320, y: 260, label: "P7" },
+        { id: 8, x: 370, y: 150, label: "P8" },
+        { id: 9, x: 130, y: 180, label: "P9" },
+      ];
+
+      const queryPoint = { x: 220, y: 140, label: "Q" };
+
+      // Semantic search "documents"
+      const semanticDocs = [
+        { id: 1, text: "How to train a dog", embedding: [0.2, 0.7] },
+        { id: 2, text: "Dog training techniques", embedding: [0.25, 0.65] },
+        { id: 3, text: "Cat behavior explained", embedding: [0.7, 0.3] },
+        { id: 4, text: "Pet care for beginners", embedding: [0.4, 0.5] },
+        { id: 5, text: "Feline health issues", embedding: [0.8, 0.2] },
+        { id: 6, text: "Training puppies at home", embedding: [0.15, 0.75] },
+        { id: 7, text: "Bird watching guide", embedding: [0.9, 0.7] },
+        { id: 8, text: "Exotic pet ownership", embedding: [0.6, 0.8] },
+        { id: 9, text: "Dog breeds comparison", embedding: [0.3, 0.6] },
+      ];
+
+      const semanticQuery = {
+        text: "How to train my puppy",
+        embedding: [0.2, 0.8],
+      };
+
+      // Sparse vector "documents"
+      const vocabulary = [
+        "dog",
+        "cat",
+        "train",
+        "pet",
+        "health",
+        "food",
+        "guide",
+        "home",
+        "behavior",
+        "puppy",
+      ];
+
+      const sparseVectors = [
+        {
+          id: 1,
+          text: "Dog training guide",
+          vector: [0.8, 0, 0.7, 0.1, 0, 0, 0.3, 0, 0, 0],
+        },
+        {
+          id: 2,
+          text: "Cat health and food",
+          vector: [0, 0.9, 0, 0.2, 0.7, 0.6, 0, 0, 0, 0],
+        },
+        {
+          id: 3,
+          text: "Puppy behavior at home",
+          vector: [0.3, 0, 0, 0, 0, 0, 0, 0.7, 0.8, 0.9],
+        },
+        {
+          id: 4,
+          text: "Pet food guide",
+          vector: [0, 0, 0, 0.7, 0, 0.8, 0.6, 0, 0, 0],
+        },
+        {
+          id: 5,
+          text: "Cat and dog behavior",
+          vector: [0.5, 0.5, 0, 0, 0, 0, 0, 0, 0.9, 0],
+        },
+        {
+          id: 6,
+          text: "Training your puppy",
+          vector: [0, 0, 0.8, 0, 0, 0, 0, 0, 0, 0.8],
+        },
+      ];
+
+      const sparseQuery = {
+        text: "dog training puppies",
+        vector: [0.6, 0, 0.7, 0, 0, 0, 0, 0, 0, 0.5],
+      };
+
+      // Distance functions
+      function euclideanDistance(p1, p2) {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+      }
+
+      function manhattanDistance(p1, p2) {
+        return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+      }
+
+      function cosineDistance(p1, p2) {
+        // Convert to vectors from origin
+        const dotProduct = p1.x * p2.x + p1.y * p2.y;
+        const mag1 = Math.sqrt(p1.x * p1.x + p1.y * p1.y);
+        const mag2 = Math.sqrt(p2.x * p2.x + p2.y * p2.y);
+        return 1 - dotProduct / (mag1 * mag2);
+      }
+
+      function cosineSimilarity(v1, v2) {
+        let dotProduct = 0;
+        let mag1 = 0;
+        let mag2 = 0;
+
+        for (let i = 0; i < v1.length; i++) {
+          dotProduct += v1[i] * v2[i];
+          mag1 += v1[i] * v1[i];
+          mag2 += v2[i] * v2[i];
+        }
+
+        mag1 = Math.sqrt(mag1);
+        mag2 = Math.sqrt(mag2);
+
+        return dotProduct / (mag1 * mag2);
+      }
+
+      // ENN Canvas Setup
+      const ennCanvas = document.getElementById("ennCanvas");
+      const ennCtx = ennCanvas.getContext("2d");
+      const ennDistanceSelect = document.getElementById("ennDistance");
+      const ennStepSelect = document.getElementById("ennStep");
+      const ennStepTitle = document.getElementById("ennStepTitle");
+      const ennStepDesc = document.getElementById("ennStepDesc");
+      const ennTooltip = document.getElementById("ennTooltip");
+
+      // ANN Canvas Setup
+      const annCanvas = document.getElementById("annCanvas");
+      const annCtx = annCanvas.getContext("2d");
+      const annAlgorithmSelect = document.getElementById("annAlgorithm");
+      const annStepSelect = document.getElementById("annStep");
+      const annStepTitle = document.getElementById("annStepTitle");
+      const annStepDesc = document.getElementById("annStepDesc");
+      const annTooltip = document.getElementById("annTooltip");
+
+      // Semantic Canvas Setup
+      const semanticCanvas = document.getElementById("semanticCanvas");
+      const semanticCtx = semanticCanvas.getContext("2d");
+      const semanticModelSelect = document.getElementById("semanticModel");
+      const semanticStepSelect = document.getElementById("semanticStep");
+      const semanticStepTitle = document.getElementById("semanticStepTitle");
+      const semanticStepDesc = document.getElementById("semanticStepDesc");
+      const semanticTooltip = document.getElementById("semanticTooltip");
+
+      // Sparse Canvas Setup
+      const sparseCanvas = document.getElementById("sparseCanvas");
+      const sparseCtx = sparseCanvas.getContext("2d");
+      const sparseModelSelect = document.getElementById("sparseModel");
+      const sparseStepSelect = document.getElementById("sparseStep");
+      const sparseStepTitle = document.getElementById("sparseStepTitle");
+      const sparseStepDesc = document.getElementById("sparseStepDesc");
+      const sparseTooltip = document.getElementById("sparseTooltip");
+
+      // Event listeners for ENN
+      ennDistanceSelect.addEventListener("change", renderENNSearch);
+      ennStepSelect.addEventListener("change", renderENNSearch);
+
+      // Event listeners for ANN
+      annAlgorithmSelect.addEventListener("change", renderANNSearch);
+      annStepSelect.addEventListener("change", renderANNSearch);
+
+      // Event listeners for Semantic Search
+      semanticModelSelect.addEventListener("change", renderSemanticSearch);
+      semanticStepSelect.addEventListener("change", renderSemanticSearch);
+
+      // Event listeners for Sparse Vector Search
+      sparseModelSelect.addEventListener("change", renderSparseSearch);
+      sparseStepSelect.addEventListener("change", renderSparseSearch);
+
+      // Draw all visualizations initially
+      renderENNSearch();
+      renderANNSearch();
+      renderSemanticSearch();
+      renderSparseSearch();
+
+      // ENN Search visualization
+      function renderENNSearch() {
+        const distanceMetric = ennDistanceSelect.value;
+        const step = parseInt(ennStepSelect.value);
+
+        // Clear canvas
+        ennCtx.clearRect(0, 0, ennCanvas.width, ennCanvas.height);
+
+        // Draw grid
+        drawGrid(ennCtx);
+
+        // Calculate distances based on selected metric
+        let distances = dataPoints.map((point) => {
+          let dist;
+          if (distanceMetric === "euclidean") {
+            dist = euclideanDistance(point, queryPoint);
+          } else if (distanceMetric === "manhattan") {
+            dist = manhattanDistance(point, queryPoint);
+          } else if (distanceMetric === "cosine") {
+            dist = cosineDistance(point, queryPoint);
+          }
+          return { ...point, distance: dist };
+        });
+
+        // Sort by distance
+        let sortedPoints = [...distances].sort(
+          (a, b) => a.distance - b.distance
+        );
+
+        // Draw data points
+        dataPoints.forEach((point) => {
+          drawPoint(ennCtx, point.x, point.y, "#3498db", point.label);
+        });
+
+        // Draw query point
+        drawPoint(
+          ennCtx,
+          queryPoint.x,
+          queryPoint.y,
+          "#e74c3c",
+          queryPoint.label,
+          12
+        );
+
+        // Step-specific rendering
+        if (step >= 1) {
+          // Draw distance lines to all points
+          distances.forEach((point) => {
+            drawLine(
+              ennCtx,
+              queryPoint.x,
+              queryPoint.y,
+              point.x,
+              point.y,
+              "#aaa",
+              [3, 3]
+            );
+
+            // Draw distance value
+            const midX = (queryPoint.x + point.x) / 2;
+            const midY = (queryPoint.y + point.y) / 2;
+            ennCtx.fillStyle = "#555";
+            ennCtx.font = "11px Arial";
+            ennCtx.textAlign = "center";
+            ennCtx.fillText(point.distance.toFixed(1), midX, midY);
+          });
+        }
+
+        if (step >= 2) {
+          // Visualize sorting by distance
+          let yPos = 20;
+          ennCtx.fillStyle = "#333";
+          ennCtx.font = "12px Arial";
+          ennCtx.textAlign = "left";
+          ennCtx.fillText("Sorted by distance:", 10, yPos);
+
+          for (let i = 0; i < Math.min(5, sortedPoints.length); i++) {
+            yPos += 15;
+            ennCtx.fillText(
+              `${i + 1}. ${sortedPoints[i].label} (${sortedPoints[
+                i
+              ].distance.toFixed(1)})`,
+              15,
+              yPos
+            );
+          }
+        }
+
+        if (step >= 3) {
+          // Highlight nearest neighbor(s)
+          const nearest = sortedPoints[0];
+          drawPoint(
+            ennCtx,
+            nearest.x,
+            nearest.y,
+            "#3498db",
+            nearest.label,
+            10,
+            "#2ecc71",
+            3
+          );
+          drawLine(
+            ennCtx,
+            queryPoint.x,
+            queryPoint.y,
+            nearest.x,
+            nearest.y,
+            "#2ecc71",
+            [],
+            2
+          );
+
+          // Draw threshold for the nearest distance
+          if (distanceMetric === "euclidean") {
+            ennCtx.beginPath();
+            ennCtx.arc(
+              queryPoint.x,
+              queryPoint.y,
+              nearest.distance,
+              0,
+              Math.PI * 2
+            );
+            ennCtx.strokeStyle = "rgba(231, 76, 60, 0.4)";
+            ennCtx.stroke();
+            ennCtx.fillStyle = "rgba(231, 76, 60, 0.05)";
+            ennCtx.fill();
+          } else if (distanceMetric === "manhattan") {
+            // Draw diamond shape
+            ennCtx.beginPath();
+            ennCtx.moveTo(queryPoint.x, queryPoint.y - nearest.distance);
+            ennCtx.lineTo(queryPoint.x + nearest.distance, queryPoint.y);
+            ennCtx.lineTo(queryPoint.x, queryPoint.y + nearest.distance);
+            ennCtx.lineTo(queryPoint.x - nearest.distance, queryPoint.y);
+            ennCtx.closePath();
+            ennCtx.strokeStyle = "rgba(231, 76, 60, 0.4)";
+            ennCtx.stroke();
+            ennCtx.fillStyle = "rgba(231, 76, 60, 0.05)";
+            ennCtx.fill();
+          } else if (distanceMetric === "cosine") {
+            // Complicated to visualize in 2D space, show a text note
+            ennCtx.fillStyle = "rgba(231, 76, 60, 0.7)";
+            ennCtx.fillText(
+              "Cosine similarity measures angle between vectors",
+              250,
+              30
+            );
+            ennCtx.fillText("smaller angle = more similar", 250, 45);
+          }
+        }
+
+        // Update step description
+        updateENNStepInfo(step, distanceMetric);
+      }
+
+      // ANN Search visualization
+      function renderANNSearch() {
+        const algorithm = annAlgorithmSelect.value;
+        const step = parseInt(annStepSelect.value);
+
+        // Clear canvas
+        annCtx.clearRect(0, 0, annCanvas.width, annCanvas.height);
+
+        // Draw grid
+        drawGrid(annCtx);
+
+        // Draw data points
+        dataPoints.forEach((point) => {
+          drawPoint(annCtx, point.x, point.y, "#3498db", point.label);
+        });
+
+        // Draw query point
+        drawPoint(
+          annCtx,
+          queryPoint.x,
+          queryPoint.y,
+          "#e74c3c",
+          queryPoint.label,
+          12
+        );
+
+        // Step-specific rendering based on algorithm
+        if (algorithm === "hnsw") {
+          renderHNSW(annCtx, step);
+        } else if (algorithm === "pq") {
+          renderProductQuantization(annCtx, step);
+        } else if (algorithm === "lsh") {
+          renderLSH(annCtx, step);
+        }
+
+        // Update step description
+        updateANNStepInfo(step, algorithm);
+      }
+
+      // Semantic Search visualization
+      function renderSemanticSearch() {
+        const model = semanticModelSelect.value;
+        const step = parseInt(semanticStepSelect.value);
+
+        // Clear canvas
+        semanticCtx.clearRect(
+          0,
+          0,
+          semanticCanvas.width,
+          semanticCanvas.height
+        );
+
+        if (step === 0) {
+          // Show text documents
+          drawTextDocuments(semanticCtx, semanticDocs, semanticQuery);
+        } else {
+          // Draw embedding space
+          drawGrid(semanticCtx);
+
+          // Draw document embeddings (2D projection)
+          semanticDocs.forEach((doc) => {
+            // Scale to canvas
+            const x = doc.embedding[0] * 400 + 30;
+            const y = (1 - doc.embedding[1]) * 250 + 20;
+            drawPoint(semanticCtx, x, y, "#3498db", `D${doc.id}`);
+          });
+
+          // Draw query embedding
+          const qx = semanticQuery.embedding[0] * 400 + 30;
+          const qy = (1 - semanticQuery.embedding[1]) * 250 + 20;
+          drawPoint(semanticCtx, qx, qy, "#e74c3c", "Q", 12);
+
+          if (step >= 2) {
+            // Calculate similarities
+            const similarities = semanticDocs
+              .map((doc) => ({
+                ...doc,
+                similarity: cosineSimilarity(
+                  doc.embedding,
+                  semanticQuery.embedding
+                ),
+              }))
+              .sort((a, b) => b.similarity - a.similarity);
+
+            // Draw lines to most similar docs
+            for (let i = 0; i < 3; i++) {
+              const doc = similarities[i];
+              const dx = doc.embedding[0] * 400 + 30;
+              const dy = (1 - doc.embedding[1]) * 250 + 20;
+
+              const lineWidth = 3 - i;
+              drawLine(semanticCtx, qx, qy, dx, dy, "#2ecc71", [], lineWidth);
+
+              // Highlight the similar document
+              drawPoint(
+                semanticCtx,
+                dx,
+                dy,
+                "#3498db",
+                `D${doc.id}`,
+                10,
+                "#2ecc71",
+                2
+              );
+
+              // Show similarity score
+              const midX = (qx + dx) / 2;
+              const midY = (qy + dy) / 2 - 10;
+              semanticCtx.fillStyle = "#555";
+              semanticCtx.font = "11px Arial";
+              semanticCtx.textAlign = "center";
+              semanticCtx.fillText(doc.similarity.toFixed(2), midX, midY);
+            }
+
+            if (step >= 3) {
+              // Display top results
+              let yPos = 20;
+              semanticCtx.fillStyle = "#333";
+              semanticCtx.font = "12px Arial";
+              semanticCtx.textAlign = "left";
+              semanticCtx.fillText("Top matches:", 10, yPos);
+
+              for (let i = 0; i < Math.min(3, similarities.length); i++) {
+                yPos += 15;
+                semanticCtx.fillText(
+                  `${similarities[i].text} (${similarities[
+                    i
+                  ].similarity.toFixed(2)})`,
+                  15,
+                  yPos
+                );
+              }
+            }
+          }
+        }
+
+        // Update step description
+        updateSemanticStepInfo(step, model);
+      }
+
+      // Sparse Vector Search visualization
+      function renderSparseSearch() {
+        const model = sparseModelSelect.value;
+        const step = parseInt(sparseStepSelect.value);
+
+        // Clear canvas
+        sparseCtx.clearRect(0, 0, sparseCanvas.width, sparseCanvas.height);
+
+        if (step === 0) {
+          // Show text documents with highlighted tokens
+          drawTokenizedDocuments(sparseCtx, sparseVectors, sparseQuery);
+        } else {
+          // Draw sparse vectors visualization
+          drawSparseVectors(sparseCtx, sparseVectors, sparseQuery, step, model);
+
+          if (step >= 2) {
+            // Calculate matching scores
+            const matches = sparseVectors
+              .map((doc) => {
+                let score = 0;
+                for (let i = 0; i < doc.vector.length; i++) {
+                  score += doc.vector[i] * sparseQuery.vector[i];
+                }
+                return { ...doc, score };
+              })
+              .sort((a, b) => b.score - a.score);
+
+            if (step >= 3) {
+              // Display top results
+              let yPos = 20;
+              sparseCtx.fillStyle = "#333";
+              sparseCtx.font = "12px Arial";
+              sparseCtx.textAlign = "left";
+              sparseCtx.fillText("Top matches:", 300, yPos);
+
+              for (let i = 0; i < Math.min(3, matches.length); i++) {
+                yPos += 15;
+                sparseCtx.fillText(
+                  `${matches[i].text} (${matches[i].score.toFixed(2)})`,
+                  300,
+                  yPos
+                );
+              }
+            }
+          }
+        }
+
+        // Update step description
+        updateSparseStepInfo(step, model);
+      }
+
+      // Algorithm-specific renderers for ANN
+      function renderHNSW(ctx, step) {
+        if (step >= 1) {
+          // Draw HNSW layers
+          ctx.strokeStyle = "#f39c12";
+          ctx.lineWidth = 1;
+
+          // Top layer (sparse connections)
+          const topLayer = [dataPoints[2], dataPoints[4], dataPoints[7]];
+          topLayer.forEach((p1, i) => {
+            topLayer.forEach((p2, j) => {
+              if (i !== j) {
+                drawLine(ctx, p1.x, p1.y, p2.x, p2.y, "#f39c12", [2, 2], 1);
+              }
+            });
+          });
+
+          // Middle layer (more connections)
+          if (step >= 2) {
+            const midLayer = [
+              dataPoints[1],
+              dataPoints[2],
+              dataPoints[4],
+              dataPoints[6],
+              dataPoints[7],
+            ];
+            midLayer.forEach((p1, i) => {
+              let connections = 0;
+              midLayer.forEach((p2, j) => {
+                if (i !== j && connections < 3) {
+                  drawLine(ctx, p1.x, p1.y, p2.x, p2.y, "#f39c12", [], 1);
+                  connections++;
+                }
+              });
+            });
+
+            // Entry point search
+            const entryPoint = dataPoints[4]; // An arbitrary entry point - Error is solved
+            drawPoint(
+              ctx,
+              entryPoint.x,
+              entryPoint.y,
+              "#3498db",
+              entryPoint.label,
+              10,
+              "#f39c12",
+              2
+            );
+            drawLine(
+              ctx,
+              queryPoint.x,
+              queryPoint.y,
+              entryPoint.x,
+              entryPoint.y,
+              "#f39c12",
+              [],
+              2
+            );
+          }
+
+          if (step >= 3) {
+            // Show local greedy search path
+            const searchPath = [
+              dataPoints[4],
+              dataPoints[7],
+              dataPoints[6],
+              dataPoints[2],
+            ];
+
+            for (let i = 0; i < searchPath.length - 1; i++) {
+              const p1 = searchPath[i];
+              const p2 = searchPath[i + 1];
+              drawLine(ctx, p1.x, p1.y, p2.x, p2.y, "#e74c3c", [], 2);
+
+              if (i < searchPath.length - 2) {
+                drawPoint(
+                  ctx,
+                  p1.x,
+                  p1.y,
+                  "#3498db",
+                  p1.label,
+                  10,
+                  "#f39c3c",
+                  2
+                );
+              }
+            }
+
+            // Final result
+            const nearest = dataPoints[2];
+            drawPoint(
+              ctx,
+              nearest.x,
+              nearest.y,
+              "#3498db",
+              nearest.label,
+              10,
+              "#2ecc71",
+              3
+            );
+            drawLine(
+              ctx,
+              queryPoint.x,
+              queryPoint.y,
+              nearest.x,
+              nearest.y,
+              "#2ecc71",
+              [],
+              2
+            );
+          }
+        }
+      }
+
+      function renderProductQuantization(ctx, step) {
+        if (step >= 1) {
+          // Draw PQ centroids and quantized regions
+
+          // Split canvas into 4 regions (simple quantization visualization)
+          ctx.strokeStyle = "#f39c12";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([]);
+
+          // Vertical split
+          ctx.beginPath();
+          ctx.moveTo(ennCanvas.width / 2, 0);
+          ctx.lineTo(ennCanvas.width / 2, ennCanvas.height);
+          ctx.stroke();
+
+          // Horizontal split
+          ctx.beginPath();
+          ctx.moveTo(0, ennCanvas.height / 2);
+          ctx.lineTo(ennCanvas.width, ennCanvas.height / 2);
+          ctx.stroke();
+
+          // Label regions
+          ctx.fillStyle = "#f39c12";
+          ctx.font = "12px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("Region 1", ennCanvas.width / 4, ennCanvas.height / 4);
+          ctx.fillText(
+            "Region 2",
+            (3 * ennCanvas.width) / 4,
+            ennCanvas.height / 4
+          );
+          ctx.fillText(
+            "Region 3",
+            ennCanvas.width / 4,
+            (3 * ennCanvas.height) / 4
+          );
+          ctx.fillText(
+            "Region 4",
+            (3 * ennCanvas.width) / 4,
+            (3 * ennCanvas.height) / 4
+          );
+
+          if (step >= 2) {
+            // Identify query region
+            let queryRegion;
+            if (queryPoint.x < ennCanvas.width / 2) {
+              if (queryPoint.y < ennCanvas.height / 2) {
+                queryRegion = 1;
+              } else {
+                queryRegion = 3;
+              }
+            } else {
+              if (queryPoint.y < ennCanvas.height / 2) {
+                queryRegion = 2;
+              } else {
+                queryRegion = 4;
+              }
+            }
+
+            // Highlight query region
+            ctx.fillStyle = "rgba(243, 156, 18, 0.1)";
+            if (queryRegion === 1) {
+              ctx.fillRect(0, 0, ennCanvas.width / 2, ennCanvas.height / 2);
+            } else if (queryRegion === 2) {
+              ctx.fillRect(
+                ennCanvas.width / 2,
+                0,
+                ennCanvas.width / 2,
+                ennCanvas.height / 2
+              );
+            } else if (queryRegion === 3) {
+              ctx.fillRect(
+                0,
+                ennCanvas.height / 2,
+                ennCanvas.width / 2,
+                ennCanvas.height / 2
+              );
+            } else {
+              ctx.fillRect(
+                ennCanvas.width / 2,
+                ennCanvas.height / 2,
+                ennCanvas.width / 2,
+                ennCanvas.height / 2
+              );
+            }
+
+            // Only search points in that region
+            const pointsInRegion = dataPoints.filter((p) => {
+              const region =
+                p.x < ennCanvas.width / 2
+                  ? p.y < ennCanvas.height / 2
+                    ? 1
+                    : 3
+                  : p.y < ennCanvas.height / 2
+                  ? 2
+                  : 4;
+              return region === queryRegion;
+            });
+
+            // Draw lines to only those points
+            pointsInRegion.forEach((point) => {
+              drawLine(
+                ctx,
+                queryPoint.x,
+                queryPoint.y,
+                point.x,
+                point.y,
+                "#aaa",
+                [3, 3]
+              );
+            });
+          }
+
+          if (step >= 3) {
+            // Find approximated nearest (would be from the shortlisted region)
+            const distances = dataPoints.map((point) => ({
+              ...point,
+              distance: euclideanDistance(point, queryPoint),
+            }));
+
+            // Filter to correct region first
+            let queryRegion;
+            if (queryPoint.x < ennCanvas.width / 2) {
+              if (queryPoint.y < ennCanvas.height / 2) {
+                queryRegion = 1;
+              } else {
+                queryRegion = 3;
+              }
+            } else {
+              if (queryPoint.y < ennCanvas.height / 2) {
+                queryRegion = 2;
+              } else {
+                queryRegion = 4;
+              }
+            }
+
+            const pointsInRegion = distances.filter((p) => {
+              const region =
+                p.x < ennCanvas.width / 2
+                  ? p.y < ennCanvas.height / 2
+                    ? 1
+                    : 3
+                  : p.y < ennCanvas.height / 2
+                  ? 2
+                  : 4;
+              return region === queryRegion;
+            });
+
+            // Sort to find nearest in region
+            const nearest = pointsInRegion.sort(
+              (a, b) => a.distance - b.distance
+            )[0];
+
+            // Highlight approximate nearest neighbor
+            drawPoint(
+              ctx,
+              nearest.x,
+              nearest.y,
+              "#3498db",
+              nearest.label,
+              10,
+              "#2ecc71",
+              3
+            );
+            drawLine(
+              ctx,
+              queryPoint.x,
+              queryPoint.y,
+              nearest.x,
+              nearest.y,
+              "#2ecc71",
+              [],
+              2
+            );
+
+            // Check if it's actually the true nearest neighbor
+            const trueNearest = distances.sort(
+              (a, b) => a.distance - b.distance
+            )[0];
+            if (nearest.id !== trueNearest.id) {
+              // Show actual nearest as reference
+              drawPoint(
+                ctx,
+                trueNearest.x,
+                trueNearest.y,
+                "#3498db",
+                trueNearest.label,
+                10,
+                "#e74c3c",
+                2
+              );
+              drawLine(
+                ctx,
+                queryPoint.x,
+                queryPoint.y,
+                trueNearest.x,
+                trueNearest.y,
+                "#e74c3c",
+                [5, 5],
+                1
+              );
+
+              ctx.fillStyle = "#e74c3c";
+              ctx.font = "12px Arial";
+              ctx.textAlign = "left";
+              ctx.fillText("Approximation error", 10, 20);
+              ctx.fillText(`True nearest: ${trueNearest.label}`, 10, 35);
+            } else {
+              ctx.fillStyle = "#2ecc71";
+              ctx.font = "12px Arial";
+              ctx.textAlign = "left";
+              ctx.fillText("Correct match", 10, 20);
+            }
+          }
+        }
+      }
+
+      // Helper functions for visualizations
+      function drawGrid(ctx) {
+        ctx.strokeStyle = "#e0e0e0";
+        ctx.lineWidth = 0.5;
+
+        // Vertical lines
+        for (let x = 0; x < ctx.canvas.width; x += 40) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, ctx.canvas.height);
+          ctx.stroke();
+        }
+
+        // Horizontal lines
+        for (let y = 0; y < ctx.canvas.height; y += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(ctx.canvas.width, y);
+          ctx.stroke();
+        }
+      }
+
+      function drawPoint(
+        ctx,
+        x,
+        y,
+        color,
+        label,
+        radius = 8,
+        strokeColor = "#333",
+        strokeWidth = 1
+      ) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = "#333";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(label, x, y - radius - 5);
+      }
+
+      function drawLine(
+        ctx,
+        x1,
+        y1,
+        x2,
+        y2,
+        color = "#333",
+        dash = [],
+        width = 1
+      ) {
+        ctx.beginPath();
+        ctx.setLineDash(dash);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      function drawTextDocuments(ctx, docs, query) {
+        ctx.fillStyle = "#333";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "left";
+
+        // Draw title
+        ctx.fillText("Original Text Documents:", 20, 30);
+
+        // Draw documents
+        let y = 60;
+        docs.slice(0, 5).forEach((doc) => {
+          ctx.fillStyle = "#3498db";
+          ctx.fillText(`D${doc.id}: ${doc.text}`, 20, y);
+          y += 25;
+        });
+
+        // Draw query
+        y += 20;
+        ctx.fillStyle = "#e74c3c";
+        ctx.fillText(`Query: "${query.text}"`, 20, y);
+
+        // Instructions
+        y += 40;
+        ctx.fillStyle = "#333";
+        ctx.fillText(
+          "Step 1: These documents will be converted to vector embeddings",
+          20,
+          y
+        );
+        ctx.fillText("that capture their semantic meaning.", 20, y + 20);
+      }
+
+      function drawTokenizedDocuments(ctx, docs, query) {
+        ctx.fillStyle = "#333";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "left";
+
+        // Draw title
+        ctx.fillText("Tokenized Documents:", 20, 30);
+
+        // Draw vocabulary
+        ctx.fillText(
+          "Vocabulary: dog, cat, train, pet, health, food, guide, home, behavior, puppy",
+          20,
+          50
+        );
+
+        // Draw documents with highlighted tokens
+        let y = 80;
+        docs.slice(0, 5).forEach((doc) => {
+          ctx.fillStyle = "#3498db";
+          ctx.fillText(`D${doc.id}: ${doc.text}`, 20, y);
+
+          // Show token highlighting
+          for (let i = 0; i < vocabulary.length; i++) {
+            if (
+              doc.vector[i] > 0 &&
+              doc.text.toLowerCase().includes(vocabulary[i])
+            ) {
+              const startX = 20 + ctx.measureText(`D${doc.id}: `).width;
+              const wordStart = doc.text.toLowerCase().indexOf(vocabulary[i]);
+              const prefix = doc.text.substring(0, wordStart);
+              const prefixWidth = ctx.measureText(prefix).width;
+              const wordWidth = ctx.measureText(vocabulary[i]).width;
+
+              ctx.fillStyle = "rgba(46, 204, 113, 0.3)";
+              ctx.fillRect(startX + prefixWidth, y - 12, wordWidth, 15);
+            }
+          }
+
+          y += 25;
+        });
+
+        // Draw query with highlighted tokens
+        y += 20;
+        ctx.fillStyle = "#e74c3c";
+        ctx.fillText(`Query: "${query.text}"`, 20, y);
+
+        // Highlight query tokens
+        for (let i = 0; i < vocabulary.length; i++) {
+          if (
+            query.vector[i] > 0 &&
+            query.text.toLowerCase().includes(vocabulary[i])
+          ) {
+            const startX = 20 + ctx.measureText(`Query: "`).width;
+            const wordStart = query.text.toLowerCase().indexOf(vocabulary[i]);
+            const prefix = query.text.substring(0, wordStart);
+            const prefixWidth = ctx.measureText(prefix).width;
+            const wordWidth = ctx.measureText(vocabulary[i]).width;
+
+            ctx.fillStyle = "rgba(231, 76, 60, 0.3)";
+            ctx.fillRect(startX + prefixWidth, y - 12, wordWidth, 15);
+          }
+        }
+      }
+
+      function drawSparseVectors(ctx, docs, query, step, model) {
+        const barWidth = 15;
+        const barSpacing = 5;
+        const startX = 40;
+        const startY = 220;
+        const maxBarHeight = 100;
+
+        if (step >= 1) {
+          // Draw vocabulary labels on x-axis
+          ctx.fillStyle = "#333";
+          ctx.font = "10px Arial";
+          ctx.textAlign = "center";
+
+          vocabulary.forEach((word, i) => {
+            const x = startX + i * (barWidth + barSpacing) + barWidth / 2;
+            ctx.fillText(word, x, startY + 15);
+          });
+
+          // Draw axis titles
+          ctx.textAlign = "center";
+          ctx.fillText("Vocabulary Terms", 230, startY + 30);
+
+          ctx.save();
+          ctx.translate(15, 150);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText("Term Weight", 0, 0);
+          ctx.restore();
+
+          // Draw query vector
+          ctx.fillStyle = "#333";
+          ctx.font = "12px Arial";
+          ctx.textAlign = "left";
+          ctx.fillText("Query vector:", 20, 40);
+
+          query.vector.forEach((value, i) => {
+            const x = startX + i * (barWidth + barSpacing);
+            const barHeight = value * maxBarHeight;
+
+            ctx.fillStyle = value > 0 ? "#e74c3c" : "#f8f9fa";
+            ctx.fillRect(x, startY - barHeight, barWidth, barHeight);
+
+            if (value > 0) {
+              ctx.fillStyle = "#fff";
+              ctx.textAlign = "center";
+              ctx.font = "9px Arial";
+              ctx.fillText(
+                value.toFixed(1),
+                x + barWidth / 2,
+                startY - barHeight / 2
+              );
+            }
+
+            // Also draw mini version above
+            const miniHeight = value * 20;
+            ctx.fillStyle = value > 0 ? "#e74c3c" : "#f8f9fa";
+            ctx.fillRect(x, 50, barWidth, miniHeight);
+          });
+
+          if (step >= 2) {
+            // Draw a document vector for comparison
+            const matchingDoc = docs.find((d) => d.id === 1); // Dog training guide
+
+            ctx.fillStyle = "#333";
+            ctx.font = "12px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(`Document: "${matchingDoc.text}"`, 20, 100);
+
+            matchingDoc.vector.forEach((value, i) => {
+              const x = startX + i * (barWidth + barSpacing);
+              const miniHeight = value * 20;
+
+              // Mini version above
+              ctx.fillStyle = value > 0 ? "#3498db" : "#f8f9fa";
+              ctx.fillRect(x, 110, barWidth, miniHeight);
+
+              // Highlight matching terms
+              if (value > 0 && query.vector[i] > 0) {
+                ctx.fillStyle = "#2ecc71";
+                ctx.strokeStyle = "#2ecc71";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, 50, barWidth, query.vector[i] * 20);
+                ctx.strokeRect(x, 110, barWidth, miniHeight);
+
+                // Draw connection
+                drawLine(
+                  ctx,
+                  x + barWidth / 2,
+                  50 + query.vector[i] * 20,
+                  x + barWidth / 2,
+                  110,
+                  "#2ecc71",
+                  [],
+                  1
+                );
+              }
+            });
+
+            // Show dot product calculation
+            let dotProduct = 0;
+            for (let i = 0; i < query.vector.length; i++) {
+              dotProduct += query.vector[i] * matchingDoc.vector[i];
+            }
+
+            ctx.fillStyle = "#333";
+            ctx.font = "12px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(`Matching score: ${dotProduct.toFixed(2)}`, 320, 100);
+          }
+        }
+      }
+
+      // Update step descriptions
+      function updateENNStepInfo(step, distanceMetric) {
+        let title, description;
+
+        switch (step) {
+          case 0:
+            title = "Step 0: Data points";
+            description =
+              "Initial dataset with vectors in feature space. The query point (red) will be compared against all data points.";
+            break;
+          case 1:
+            title = "Step 1: Calculate all distances";
+            if (distanceMetric === "euclidean") {
+              description =
+                "Calculate Euclidean (L2) distance between query and every data point: d = √((x₂-x₁)² + (y₂-y₁)²).";
+            } else if (distanceMetric === "manhattan") {
+              description =
+                "Calculate Manhattan (L1) distance between query and every data point: d = |x₂-x₁| + |y₂-y₁|.";
+            } else {
+              description =
+                "Calculate Cosine similarity between query and data points: similarity = cos(θ) between vectors.";
+            }
+            break;
+          case 2:
+            title = "Step 2: Sort by distance";
+            description =
+              "Sort all data points by their distance to query point (ascending order for distance, descending for similarity).";
+            break;
+          case 3:
+            title = "Step 3: Return nearest neighbors";
+            description =
+              "Return the k closest data points (here k=1). This approach guarantees finding the exact nearest neighbor.";
+            break;
+        }
+
+        ennStepTitle.textContent = title;
+        ennStepDesc.textContent = description;
+      }
+
+      function updateANNStepInfo(step, algorithm) {
+        let title, description;
+
+        switch (step) {
+          case 0:
+            title = "Step 0: Indexed structure";
+            if (algorithm === "hnsw") {
+              description =
+                "HNSW pre-organizes vectors into a navigable small world graph with multiple layers for efficient search.";
+            } else if (algorithm === "pq") {
+              description =
+                "Product Quantization divides the vector space into smaller subspaces and quantizes each dimension group.";
+            } else {
+              description =
+                "Locality-Sensitive Hashing uses hash functions that map similar vectors to the same buckets.";
+            }
+            break;
+          case 1:
+            title = "Step 1: Navigate to region";
+            if (algorithm === "hnsw") {
+              description =
+                "Search begins at a random entry point in the top layer (sparse connections).";
+            } else if (algorithm === "pq") {
+              description =
+                "The query is mapped to specific regions in each subspace based on quantized centroids.";
+            } else {
+              description =
+                "Query vector is hashed to identify which bucket(s) to search.";
+            }
+            break;
+          case 2:
+            title = "Step 2: Local search";
+            if (algorithm === "hnsw") {
+              description =
+                "Navigate through connections to find closer and closer neighbors, descending through layers.";
+            } else if (algorithm === "pq") {
+              description =
+                "Compare only with points in the same or nearby quantized regions to limit search space.";
+            } else {
+              description =
+                "Only compute distances for vectors in the same hash bucket, dramatically reducing comparisons.";
+            }
+            break;
+          case 3:
+            title = "Step 3: Return approximate NN";
+            if (algorithm === "hnsw") {
+              description =
+                "Return the closest point found. May not be the true nearest neighbor, but usually very close.";
+            } else if (algorithm === "pq") {
+              description =
+                "Approximates distances between query and dataset points. Fast but loses some precision.";
+            } else {
+              description =
+                "If points fall into different buckets, LSH might miss true nearest neighbors (accuracy vs. speed tradeoff).";
+            }
+            break;
+        }
+
+        annStepTitle.textContent = title;
+        annStepDesc.textContent = description;
+      }
+
+      function updateSemanticStepInfo(step, model) {
+        let title, description;
+
+        switch (step) {
+          case 0:
+            title = "Step 0: Text documents";
+            description = "Raw text data before encoding into vector space.";
+            break;
+          case 1:
+            title = "Step 1: Generate embeddings";
+            if (model === "bert") {
+              description =
+                "BERT creates dense vector embeddings (768 dimensions) that capture semantic meaning of text.";
+            } else if (model === "use") {
+              description =
+                "Universal Sentence Encoder maps sentences to 512-dimensional vectors that capture meaning.";
+            } else {
+              description =
+                "Domain-specific embeddings capture meaning relevant to particular fields or applications.";
+            }
+            break;
+          case 2:
+            title = "Step 2: Vector similarity search";
+            description =
+              "Calculate similarity (usually cosine) between query vector and document vectors.";
+            break;
+          case 3:
+            title = "Step 3: Return relevant results";
+            description =
+              "Rank documents by similarity and return the most relevant. Results include semantic matches, not just exact keyword matches.";
+            break;
+        }
+
+        semanticStepTitle.textContent = title;
+        semanticStepDesc.textContent = description;
+      }
+
+      function updateSparseStepInfo(step, model) {
+        let title, description;
+
+        switch (step) {
+          case 0:
+            title = "Step 0: Tokenized content";
+            description =
+              "Documents broken down into tokens (words/terms) before converting to sparse vector representation.";
+            break;
+          case 1:
+            title = "Step 1: Create sparse vectors";
+            if (model === "tfidf") {
+              description =
+                "TF-IDF weights tokens based on term frequency and inverse document frequency to emphasize distinctive terms.";
+            } else if (model === "bm25") {
+              description =
+                "BM25 extends TF-IDF with better term saturation and document length normalization.";
+            } else {
+              description =
+                "Hybrid representations combine sparse (keyword) and dense (semantic) vectors for better retrieval.";
+            }
+            break;
+          case 2:
+            title = "Step 2: Inverted index search";
+            description =
+              "Lookup only the specific terms present in the query, accessing posting lists through an inverted index.";
+            break;
+          case 3:
+            title = "Step 3: Return matches";
+            description =
+              "Return documents with matching terms, ranked by relevance score. Very efficient for exact term matches.";
+            break;
+        }
+
+        sparseStepTitle.textContent = title;
+        sparseStepDesc.textContent = description;
+      }
+    </script>
+  </body>
+</html>
