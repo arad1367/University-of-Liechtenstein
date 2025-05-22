@@ -1,0 +1,14 @@
+Requirements:
+1. Git --> if you have not, download: https://git-scm.com/downloads
+2. Node.js LTS version, download: https://nodejs.org/en
+3. Check node is install: in git --> node --version 
+if you see node version, that is ok!
+
+Flowise installation
+1. Install Flowise: npm install -g flowise
+2. Start : npx flowise start  
+3. Update Flowise: npm update -g flowise 
+4. Uninstall Flowise: npm uninstall -g flowise 
+
+Projects:
+1. Chatgpt clone
