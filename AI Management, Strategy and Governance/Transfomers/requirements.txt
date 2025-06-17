@@ -41,7 +41,7 @@ pillow==11.1.0
 platformdirs==4.3.6
 prompt_toolkit==3.0.50
 propcache==0.3.0
-protobuf==6.30.1
+protobuf==6.31.1
 psutil==7.0.0
 pure_eval==0.2.3
 pyarrow==19.0.1
